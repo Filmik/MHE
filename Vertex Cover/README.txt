@@ -1,0 +1,1 @@
+Vertex cover: The problem of finding a minimum vertex cover in graph

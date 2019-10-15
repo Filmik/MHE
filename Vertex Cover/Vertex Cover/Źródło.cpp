@@ -5,7 +5,7 @@
 
 using namespace std;
 
-vector<vector<int> > g;
+vector<vector<int> > g;//vector for edge conections
 bool v[11110];
 int i, j;
 vector<int> sol_vertex(int n, int e) {
@@ -27,24 +27,28 @@ vector<int> sol_vertex(int n, int e) {
 	return S;
 }
 int main() {
-	int n, e, a, b;
-	cout << "Enter number of vertices:";
+	int n, e, a, b, s=0;//bardzielj logicznwe nazwy
+	cout << "Enter number of vertices:";//Enter vertexes
 	cin >> n;
-	cout << "Enter number of Edges:";
+	cout << "Enter number of Edges:";//Enter edges
 	cin >> e;
 	g.resize(n);
 	memset(v, 0, sizeof(v));
 	for (i = 0; i < e; i++) {
-		cout << "Enter the end-points of edge " << i + 1 << " : ";
+		cout << "Enter the end-points of edge " << i + 1 << " : ";//Enter conections 
 		cin >> a >> b;
 		a--; b--;
 		g[a].push_back(b);
 		g[b].push_back(a);
 	}
 	vector<int> S = sol_vertex(n, e);
-	cout << "The required vertex cover is as follows:\n";
-	for (i = 0; i < (int)S.size(); i++)
+	cout << "The required vertex cover is as follows:\n";//Exit
+	for (i = 0; i < (int)S.size(); i++) {
 		cout << S[i] + 1 << " ";
+		s = s + 1;
+	}
+	cout << endl;
+	cout <<"Number on needed edges: "<< s;
 	return 0;
 }
 /*Enter number of vertices:4
