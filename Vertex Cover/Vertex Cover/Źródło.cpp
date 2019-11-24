@@ -37,35 +37,66 @@ void Show_conections()
 	}
 }
 
-float Best_solution(vector<int> solution) //solution contains selected vertexes
+float Best_solution(vector<int> solution, int number_of_vertex, int number_of_edges) //solution contains selected vertexes
 {
 	int edges_in_soluton=0;
 	int vertex_in_solution = 0;
+	int number_of_duplicats=0;
+	vector<int> entered_edges;
+
 	for (int x=0; x < solution.size(); x++) {
 		cout << "SOLUTIONS:" << solution[x] << endl;
 		int b = solution[x];
 		b--;
-		//if h[x]== sol[x]
 		for (int y = 0; y < h[b].size(); y++)//for evry edge in x 
 		{
-					cout << "H XY" << h[b][y]+1 << endl;
-					edges_in_soluton++;
+			entered_edges.push_back(h[b][y]);
+			edges_in_soluton++;
 		}
-		
 		vertex_in_solution++;
 	}
-	cout << "V" << vertex_in_solution << "E" << edges_in_soluton<<endl;
+
+	//how meny duplicats
+	for (int x = 0; x < entered_edges.size(); x++)
+	{
+		int current_number_of_duplicats = 0;
+		int current_edge= entered_edges[x];
+		int y = x;
+		for (y; y<entered_edges.size(); y++)
+		{
+			if (current_edge == entered_edges[y])
+			{
+				current_number_of_duplicats++;
+			}
+		}
+		if (current_number_of_duplicats > 1)
+		{
+			number_of_duplicats+= current_number_of_duplicats-1;
+		}
+	}
+
+	cout << "V=" << vertex_in_solution << " E=" << edges_in_soluton<<" D="<< number_of_duplicats <<endl;
+	best_solution += (float)number_of_vertex / (float)vertex_in_solution;//points for number of  used vertex
+	best_solution *= ((float)number_of_edges * pow(((float)edges_in_soluton-(float)number_of_duplicats), 2.0));//points for covering edges
+	best_solution -= (pow(number_of_duplicats, 2.0) * 4);//minus points for duplicats
+	cout <<"best_solution= "<<best_solution<<endl;
 	return best_solution;
 }
 
 void Climbing_Algorythm(int number_of_vertex, int number_of_edges)
 {
-	//random solution
-	vector<int>random_solution;
-	random_solution.resize(number_of_edges);
-	random_solution.push_back(2);
-	random_solution.push_back(4);
-	Best_solution(random_solution);//rate random solution
+	vector<int>random_solution; 
+	random_device rd; // obtain a random number from hardware
+	mt19937 eng(rd()); // seed the generator
+	uniform_int_distribution<> distr(1, number_of_vertex);// define the range
+	for (int x = 0; x < distr(eng); x++)
+	{
+		random_solution.push_back(distr(eng));
+	}
+	//random_solution.push_back(1);
+	//random_solution.push_back(1);
+	Best_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
+	//ALGORYTM 
 	//algorythm, rate every new solution
 }
 
@@ -104,7 +135,7 @@ vector<int> sol_vertex(int n, int e) {
 	return S;
 }
 
-tuple<int, int> data_from_file(int number_of_vertex, int number_of_edges, int conection_start, int conection_end)
+tuple<int, int> data_from_file(int& number_of_vertex, int& number_of_edges, int conection_start, int conection_end)
 {
 	fstream input_data;
 	input_data.open("input_data.txt", ios::in);
@@ -199,7 +230,6 @@ int main() {
 	//tie(number_of_vertex, number_of_edges, conection_start, conection_end)= generate_graph();
 	
 	//cout <<"OOOOOOOOOOOOOOOOOOOOOOOOOOO=="<< g[0][2]<<endl;
-
 	///*vector<int> solution =*/BruteForceVertexCover(number_of_vertex, number_of_edges);//JESLI dziala to dziala reszta
 	
 	Show_conections();
@@ -225,15 +255,6 @@ int main() {
 	printf("Czas wykonywania: %lu ms\n", clock() - start);
 	return 0;
 }
-/*Enter number of vertices:4
-Enter number of Edges:5
-Enter the end-points of edge 1 : 2 1
-Enter the end-points of edge 2 : 3 2
-Enter the end-points of edge 3 : 4 3
-Enter the end-points of edge 4 : 1 4
-Enter the end-points of edge 5 : 1 3
-The required vertex cover is as follows:
-1 2 3 4 */
 
 //brute force- sprawdzanie czy dany vertex zaznacza wszystkie number_of_edges-krawiendzie jeœli nie to nastêpny
 //jeœli ¿aden pojednyñcy nie pokrywa to sprawdzam dla vertex 1 + vertex 2 pó¿niej 1 + 3 itd.
