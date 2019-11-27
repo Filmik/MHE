@@ -79,6 +79,7 @@ float Best_solution(vector<int> solution, int number_of_vertex, int number_of_ed
 	current_solution += (float)number_of_vertex / (float)vertex_in_solution;//points for number of  used vertex
 	current_solution *= ((float)number_of_edges * pow(((float)edges_in_soluton-(float)number_of_duplicats), 2.0));//points for covering edges
 	current_solution -= (pow(number_of_duplicats, 2.0) * 4);//minus points for duplicats
+	current_solution /= 1000;
 	if (current_solution > best_solution) {
 		best_solution= current_solution;
 		cout << "best_solution= " << best_solution << endl;
@@ -86,9 +87,9 @@ float Best_solution(vector<int> solution, int number_of_vertex, int number_of_ed
 	return current_solution;
 }
 
-void Climbing_Algorythm(int number_of_vertex, int number_of_edges)
+void Climbing_Algorithm(int number_of_vertex, int number_of_edges)
 {
-	float current_solution;
+	float current_solution=0;
 	vector<int>random_solution;
 	random_device rd; // obtain a random number from hardware
 	mt19937 eng(rd()); // seed the generator
@@ -97,9 +98,8 @@ void Climbing_Algorythm(int number_of_vertex, int number_of_edges)
 	{
 		random_solution.push_back(distr(eng));
 	}
-	//random_solution.push_back(1);
-	//random_solution.push_back(1);
-	for (int x = random_solution.size(); x < random_solution.size() * 2; x++)//alternatywna 1
+
+	for (int x = random_solution.size(); x < random_solution.size() * 2; x++)//solution 1
 	{
 		current_solution=Best_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
 
@@ -115,9 +115,9 @@ void Climbing_Algorythm(int number_of_vertex, int number_of_edges)
 			x = random_solution.size() * 2;
 		}
 	}
-	/*if (random_solution.size() > 1)//alternatywna 2
+	/*if (random_solution.size() > 1)//solution 2
 	{
-		int range=2,new_solution,start_solution;
+		int range=5,new_solution,start_solution;
 		uniform_int_distribution<> close_solution(1, range);
 		current_solution = Best_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
 		start_solution = random_solution[0];
@@ -145,23 +145,119 @@ void Climbing_Algorythm(int number_of_vertex, int number_of_edges)
 	}
 	else { current_solution = Best_solution(random_solution, number_of_vertex, number_of_edges); }*/
 	
-	cout << "Best solution for climbing algorythm=" << best_solution << endl;
+	cout << "Best solution for climbing algorithm=" << current_solution << endl;
 }
 
-/*vector<int>void BruteForceVertexCover(int number_of_vertex, int number_of_edges)
+void Tabu_Algorithm(int number_of_vertex, int number_of_edges)
 {
-	//brute force- sprawdzanie czy dany vertex zaznacza wszystkie number_of_edges-krawiendzie jeœli nie to nastêpny
-//jeœli ¿aden pojednyñcy nie pokrywa to sprawdzam dla vertex 1 + vertex 2 pó¿niej 1 + 3 itd.
-//edge 1-2 == 2-1 !!!
+	int range=20,start_solution;
+	float current_solution=0,best_tabu_solution=0;
+	vector<int>random_solution;
+	random_device rd; // obtain a random number from hardware
+	mt19937 eng(rd()); // seed the generator
+	uniform_int_distribution<> distr(1, number_of_vertex);// define the range
+	for (int x = 0; x < distr(eng); x++)
+	{
+		random_solution.push_back(distr(eng));
+	}
 
-	//OCENA ROZWI¥ZANIA W FUNCJI CELU
+	start_solution = random_solution[0];
+	for (int x = 0; x < range/2; x++)
+	{
+		current_solution = Best_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
+
+		if (current_solution > best_tabu_solution)
+		{
+			best_tabu_solution = current_solution;
+		}
+			if (random_solution[0] < number_of_vertex)
+			{
+				random_solution[0] = random_solution[0] + 1;
+			}
+			else { x = range / 2; }
+	}
+
+	random_solution[0] = start_solution;
+	for (int x = 0; x < range / 2; x++)
+	{
+		current_solution = Best_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
+
+		if (current_solution > best_tabu_solution)
+		{
+			best_tabu_solution = current_solution;
+		}
+			if (random_solution[0] > 1)
+			{
+				random_solution[0] = random_solution[0] - 1;
+			}
+			else { x = range / 2; }
+	}
+
+
+	cout << "Best solution for tabu algorithm=" << best_tabu_solution << endl;
+}
+
+void Brute_Force_2(vector<int> all_vertexes, int reqLen, int start, int currLen, vector<bool> check, int len, int number_of_edges)
+{
+	vector<int>x_solution;
+	x_solution.clear();
+	// Return if the currLen is more than the required length.
+	if (currLen > reqLen)
+		return;
+	// If currLen is equal to required length then print the sequence.
+	else if (currLen == reqLen)
+	{
+		//cout << "\t";
+		for (int i = 0; i < len; i++)
+		{
+			if (check[i] == true)
+			{
+				//cout << all_vertexes[i] << " ";
+				x_solution.push_back(all_vertexes[i]);
+			}
+		}
+		//cout << "\n";
+		Best_solution(x_solution, len, number_of_edges);//rate another solution
+		return;
+	}
+	// If start equals to len then return since no further element left.
+	if (start == len)
+	{
+		return;
+	}
+	// For every index we have two options.
+	// First is, we select it, means put true in check[] and increment currLen and start.
+	check[start] = true;
+	Brute_Force_2(all_vertexes, reqLen, start + 1, currLen + 1, check, len, number_of_edges);
+	// Second is, we don't select it, means put false in check[] and only start incremented.
+	check[start] = false;
+	Brute_Force_2(all_vertexes, reqLen, start + 1, currLen, check, len, number_of_edges);
+}
+
+void Brute_Force_1(int number_of_vertex, int number_of_edges)
+{
+	int i;
+	vector<bool>check;
+	check.resize(number_of_vertex);
+	float current_solution = 0;
+	vector<int>all_vertexes;
+	all_vertexes.resize(number_of_vertex);
 	
-				//krawêdŸ 1-2==krawêdŸ 2-1 przez co nie doda jej do listy zaznaczonych krawêdzi która musi mieæ w sobie number_of_edges krawêdzi
-				//if vertex 1 to wtedy 3!=number_of_edges if 1 i 2 4!=number_of_edges if 1 i 3 5==number_of_edges wiêc wyœlij do best_solution() i tak dalej
-	
-		//drugi vektor 2d? 1d? sprawdzaj¹cy czy krawêdzie zaznaczone
-		// wyœlij kazde rozwi¹zanie ale jeœli jest s³abe to dostanie s³ab¹ ocene w funkcji celu
-}*/
+
+	// Take the input of the array.
+	for (i = 0; i < number_of_vertex; i++)
+	{
+		all_vertexes[i]=i+1;
+		check[i] = false;
+	}
+
+	// For each length of sub-array, call the Brute_Force_2
+	for (i = 1; i <= number_of_vertex; i++)
+	{
+		Brute_Force_2(all_vertexes, i, 0, 0, check, number_of_vertex, number_of_edges);
+	}
+	cout << "best_solution= " << best_solution << endl;
+}
 
 tuple<int, int> data_from_file(int& number_of_vertex, int& number_of_edges, int conection_start, int conection_end)
 {
@@ -270,22 +366,42 @@ tuple<int,int> generate_graph(int& number_of_vertex, int& number_of_edges, int c
 	return { number_of_vertex, number_of_edges };
 }
 
+
 int main() {
-	//clock_t start = clock();
-	//printf("Czas wykonywania: %lu ms\n", clock() - start);
-	int number_of_vertex=0, number_of_edges=0, conection_start=0, conection_end=0, minimum_vertex_number=0;
+	int number_of_vertex=0, number_of_edges=0, conection_start=0, conection_end=0, minimum_vertex_number=0,menu=-1;
 
 	//data_from_file(number_of_vertex, number_of_edges, conection_start, conection_end);
 	generate_graph(number_of_vertex, number_of_edges, conection_start, conection_end);
 	
-	//cout <<"OOOOOOOOOOOOOOOOOOOOOOOOOOO=="<< g[0][2]<<endl;
-	
 	Show_conections();
 
-	clock_t start = clock();
-	Climbing_Algorythm(number_of_vertex, number_of_edges);
-	printf("Czas wykonywania: %lu ms\n", clock() - start);
+	for (menu; menu != 0; )
+	{
+		cout << endl;
+		cout << "Select algorithm:" << endl << "1 --- Climbing" << endl << "2 --- Tabu" << endl <<  "3 --- Brute Force" << endl << "0 --- exit"<<endl;
+		cin >> menu;
+		cout << endl;
 
-	data_to_file(number_of_vertex, number_of_edges);
+		if (menu == 1)
+		{
+			clock_t start = clock();
+			Climbing_Algorithm(number_of_vertex, number_of_edges);
+			printf("Czas wykonywania: %lu ms\n", clock() - start);
+		}
+		if (menu == 2)
+		{
+			clock_t start = clock();
+			Tabu_Algorithm(number_of_vertex, number_of_edges);
+			printf("Czas wykonywania: %lu ms\n", clock() - start);
+		}
+		if (menu == 3)
+		{
+			clock_t start = clock();
+			Brute_Force_1(number_of_vertex, number_of_edges);
+			printf("Czas wykonywania: %lu ms\n", clock() - start);
+		}
+	}
+
+	//data_to_file(number_of_vertex, number_of_edges);
 	return 0;
 }
