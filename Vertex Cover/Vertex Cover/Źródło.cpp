@@ -12,15 +12,15 @@
 
 using namespace std;
 
-vector<vector<int> > g;//vector for edge conections, x-edge_1 y-edge_2
-vector<vector<int> > h;// x-edge y-number of edge
+vector<vector<int> > g;//vector for vertex conections, x-vertex_1 y-vertex_2
+vector<vector<int> > h;// x-vertex y-number of edge
 vector<int >solution;
-bool v[11110];
+vector<int >best_selected_vertexes;
 float best_solution=0;
 
 void Show_conections()
 {
-	cout << "Example: X---edge_nr---Y" << endl;
+	cout << "Example: X---edge_nr---Y" << endl<<endl;
 	for (int x = 0; x < g.size(); x++)//cout conections
 	{
 		cout << "NR_X=" << x + 1 << "  NR_Y:";
@@ -34,11 +34,21 @@ void Show_conections()
 		{
 			cout << h[x][y] + 1 << "-";
 		}
-		cout << endl;
+		cout << endl<<endl;
 	}
 }
 
-float Best_solution(vector<int> solution, int number_of_vertex, int number_of_edges) //solution contains selected vertexes
+void Best_solution()//Show best solution
+{
+	cout << "best_solution= " << best_solution << endl;
+
+	for (int x = 0; x < best_selected_vertexes.size(); x++)
+	{
+		cout << "SOLUTIONS:" << best_selected_vertexes[x] << endl;
+	}
+}
+
+float Rating_solution(vector<int> solution, int number_of_vertex, int number_of_edges) //solution contains selected vertexes
 {
 	int edges_in_soluton=0, vertex_in_solution = 0, number_of_duplicats = 0,b;
 	float current_solution=0;
@@ -75,12 +85,13 @@ float Best_solution(vector<int> solution, int number_of_vertex, int number_of_ed
 		}
 	}
 
-	cout << "V=" << vertex_in_solution << " E=" << edges_in_soluton<<" D="<< number_of_duplicats <<endl;
+	cout << "V=" << vertex_in_solution << " E=" << edges_in_soluton<<" D="<< number_of_duplicats <<endl<<endl;
 	current_solution += (float)number_of_vertex / (float)vertex_in_solution;//points for number of  used vertex
 	current_solution *= ((float)number_of_edges * pow(((float)edges_in_soluton-(float)number_of_duplicats), 2.0));//points for covering edges
 	current_solution -= (pow(number_of_duplicats, 2.0) * 4);//minus points for duplicats
 	current_solution /= 1000;
 	if (current_solution > best_solution) {
+		best_selected_vertexes = solution;
 		best_solution= current_solution;
 		cout << "best_solution= " << best_solution << endl;
 	}
@@ -89,6 +100,7 @@ float Best_solution(vector<int> solution, int number_of_vertex, int number_of_ed
 
 void Climbing_Algorithm(int number_of_vertex, int number_of_edges)
 {
+	int type_of_algorithm=0, range;
 	float current_solution=0;
 	vector<int>random_solution;
 	random_device rd; // obtain a random number from hardware
@@ -99,59 +111,119 @@ void Climbing_Algorithm(int number_of_vertex, int number_of_edges)
 		random_solution.push_back(distr(eng));
 	}
 
-	for (int x = random_solution.size(); x < random_solution.size() * 2; x++)//solution 1
-	{
-		current_solution=Best_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
-
-		if (current_solution == best_solution)
+	for (type_of_algorithm; type_of_algorithm < 1 || type_of_algorithm > 2;) {
+		cout << "Select type of algorithm"<<endl<<"1 or 2"<<endl;
+		cin >> type_of_algorithm;
+		if (type_of_algorithm < 1 || type_of_algorithm > 2)
 		{
-			if (random_solution[0]< number_of_vertex)
-			{
-			random_solution[0] = random_solution[0] + 1;
-			}
-		}
-		if(current_solution<best_solution)
-		{
-			x = random_solution.size() * 2;
+			cout <<endl<< "Wrong nuber"<<endl;
 		}
 	}
-	/*if (random_solution.size() > 1)//solution 2
-	{
-		int range=5,new_solution,start_solution;
-		uniform_int_distribution<> close_solution(1, range);
-		current_solution = Best_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
-		start_solution = random_solution[0];
+
+	cout << "Select range of algorythm: ";
+	cin >> range;
+	cout << endl;
+
+	if (type_of_algorithm == 1) {//solution 1
+		current_solution = Rating_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
 		for (int x = 0; x < range; x++)
 		{
-			new_solution = close_solution(eng);
-			if (new_solution % 2 == 0) 
+			if (current_solution == best_solution)
 			{
-				if (new_solution + random_solution[0] < random_solution.size())
-				{
-					random_solution[0] += new_solution;
-					current_solution = Best_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
-					random_solution[0] = start_solution;
+				if (random_solution.size()>x)
+				{ 
+					if (random_solution[x] < number_of_vertex)
+					{
+						random_solution[x] = random_solution[x] + 1;
+						current_solution = Rating_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
+						if (current_solution < best_solution)
+						{
+							return;
+						}
+						random_solution[x] = random_solution[x] - 1;
+					}
+					if (random_solution[x] > 1)
+					{
+						random_solution[x] = random_solution[x] - 1;
+						current_solution = Rating_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
+						if (current_solution < best_solution)
+						{
+							return;
+						}
+						random_solution[x] = random_solution[x] + 1;
+					}
 				}
 			}
-			else {
-				if ( random_solution[0] - new_solution > 1)
-				{
-					random_solution[0] -= new_solution;
-					current_solution = Best_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
-					random_solution[0] = start_solution;
-				}
+			if (current_solution < best_solution)
+			{
+				return;
 			}
 		}
 	}
-	else { current_solution = Best_solution(random_solution, number_of_vertex, number_of_edges); }*/
-	
-	cout << "Best solution for climbing algorithm=" << current_solution << endl;
-}
 
+	if (type_of_algorithm == 2) {//solution 2
+			int new_solution, start_solution,vertex_to_change, vertex_new_value, max_posible_range, check_range, puls_or_minus, permissible_number_of_worse_solutions, current_number_of_worse_solutions=0;
+			cout << "Permissible number of worse solutions: ";
+			cin >> permissible_number_of_worse_solutions;
+			cout << endl;
+			uniform_int_distribution<> val_vertex(1, number_of_vertex);
+			uniform_int_distribution<> plus_minus(1,2);
+			current_solution = Rating_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
+
+			for (int a = range; a > 0; a--)
+			{
+				uniform_int_distribution<> nr_vertex(0, random_solution.size() - 1);
+				vertex_to_change = nr_vertex(eng);
+				vertex_new_value = val_vertex(eng);
+				puls_or_minus = plus_minus(eng);
+				
+				if (puls_or_minus == 1)
+				{
+					check_range = random_solution[vertex_to_change];
+					check_range += vertex_new_value;
+					if (check_range < number_of_vertex && check_range>0)
+					{
+						random_solution[vertex_to_change] += vertex_new_value;
+						current_solution= Rating_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
+					}else {//add element to solution
+						random_solution.push_back(vertex_new_value);
+						current_solution= Rating_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
+					}
+				}
+				if (puls_or_minus == 2)
+				{
+					check_range = random_solution[vertex_to_change];
+					check_range -= vertex_new_value;
+					if (check_range < number_of_vertex && check_range>0)
+					{
+						random_solution[vertex_to_change] -= vertex_new_value;
+						current_solution= Rating_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
+					}else {//delete element from solution
+						if (random_solution.size()>1) {
+							random_solution.pop_back();
+							current_solution= Rating_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
+						}
+					}
+				}
+				if (current_solution >= best_solution)
+				{
+					current_number_of_worse_solutions=0;
+				}
+				if (current_solution < best_solution)
+				{
+					current_number_of_worse_solutions ++;
+				}
+				if (current_number_of_worse_solutions == permissible_number_of_worse_solutions)
+				{
+					a = 0;
+				}
+			}
+	}
+}
+//Popraw
 void Tabu_Algorithm(int number_of_vertex, int number_of_edges)
 {
-	int range=20,start_solution;
-	float current_solution=0,best_tabu_solution=0;
+	int range,start_solution;
 	vector<int>random_solution;
 	random_device rd; // obtain a random number from hardware
 	mt19937 eng(rd()); // seed the generator
@@ -160,41 +232,16 @@ void Tabu_Algorithm(int number_of_vertex, int number_of_edges)
 	{
 		random_solution.push_back(distr(eng));
 	}
+	cout << "Select range of algorythm: ";
+	cin >> range;
+	cout << endl;
+
+	//wektor na rozwi¹zania tabu
+	//wektor na aktualnych sonsiadow + sprawdzanie czy sonsiad nie jest w tabu
+	//sprawdzanie wszystkich aktualnych sonsiadow i wybieranie najlepszego, reszta do tabu
 
 	start_solution = random_solution[0];
-	for (int x = 0; x < range/2; x++)
-	{
-		current_solution = Best_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
-
-		if (current_solution > best_tabu_solution)
-		{
-			best_tabu_solution = current_solution;
-		}
-			if (random_solution[0] < number_of_vertex)
-			{
-				random_solution[0] = random_solution[0] + 1;
-			}
-			else { x = range / 2; }
-	}
-
-	random_solution[0] = start_solution;
-	for (int x = 0; x < range / 2; x++)
-	{
-		current_solution = Best_solution(random_solution, number_of_vertex, number_of_edges);//rate random solution
-
-		if (current_solution > best_tabu_solution)
-		{
-			best_tabu_solution = current_solution;
-		}
-			if (random_solution[0] > 1)
-			{
-				random_solution[0] = random_solution[0] - 1;
-			}
-			else { x = range / 2; }
-	}
-
-
-	cout << "Best solution for tabu algorithm=" << best_tabu_solution << endl;
+	
 }
 
 void Brute_Force_2(vector<int> all_vertexes, int reqLen, int start, int currLen, vector<bool> check, int len, int number_of_edges)
@@ -217,7 +264,7 @@ void Brute_Force_2(vector<int> all_vertexes, int reqLen, int start, int currLen,
 			}
 		}
 		//cout << "\n";
-		Best_solution(x_solution, len, number_of_edges);//rate another solution
+		Rating_solution(x_solution, len, number_of_edges);//rate another solution
 		return;
 	}
 	// If start equals to len then return since no further element left.
@@ -256,7 +303,6 @@ void Brute_Force_1(int number_of_vertex, int number_of_edges)
 	{
 		Brute_Force_2(all_vertexes, i, 0, 0, check, number_of_vertex, number_of_edges);
 	}
-	cout << "best_solution= " << best_solution << endl;
 }
 
 tuple<int, int> data_from_file(int& number_of_vertex, int& number_of_edges, int conection_start, int conection_end)
@@ -269,7 +315,7 @@ tuple<int, int> data_from_file(int& number_of_vertex, int& number_of_edges, int 
 	}
 	input_data >> number_of_vertex;
 	input_data >> number_of_edges;
-	cout << "Number of vertices(from file):" << number_of_vertex << endl;
+	cout << "Number of vertexes(from file):" << number_of_vertex << endl;
 	cout << "Number of Edges(from file):" << number_of_edges << endl;
 
 	g.resize(number_of_vertex);
@@ -318,61 +364,80 @@ void data_to_file(int number_of_vertex, int number_of_edges)
 	output_data.close();
 }
 
-tuple<int,int> generate_graph(int& number_of_vertex, int& number_of_edges, int conection_start, int conection_end)
+tuple<int, int> generate_graph(int& number_of_vertex, int& number_of_edges, int conection_start, int conection_end)
 {
 	random_device rd; // obtain a random number from hardware
 	mt19937 eng(rd()); // seed the generator
 
-	cout << "enter number of vertex: " ;
+	cout << "enter number of vertex: ";
 	cin >> number_of_vertex;
-		if (number_of_vertex<2)
-		{
-			cout << "number of vertex > 2 !";
-			exit(0);
-		}
-		
-	uniform_int_distribution<> random_nr_of_edges(1, number_of_vertex *(number_of_vertex - 1)/2);//no loops
+	if (number_of_vertex < 2)
+	{
+		cout << "number of vertex > 2 !";
+		exit(0);
+	}
+
+	uniform_int_distribution<> random_nr_of_edges(1, number_of_vertex * (number_of_vertex - 1) / 2);//no loops
 	number_of_edges = random_nr_of_edges(eng);
-	cout << "The graph has " << number_of_edges << " edges."<<endl;
-	
+	cout << "The graph has " << number_of_edges << " edges." << endl;
+
 	g.resize(number_of_vertex);
 	h.resize(number_of_vertex);
 	int current_start, current_end;
 	uniform_int_distribution<> random_edges(1, number_of_vertex);
-	for (int x = 0; x < number_of_edges; x++) 
+	for (int x = 0; x < number_of_edges; x++)
 	{
 		current_start = random_edges(eng);
 		current_end = random_edges(eng);
 
 		if (current_end == current_start)
 		{
-			if (current_end >= number_of_vertex)
+			if (current_end == number_of_vertex)
 			{
 				current_end--;
 			}
-			if (current_end < number_of_vertex)
+			else
 			{
 				current_end++;
 			}
 		}
-		
-		current_start--; current_end--;
-		g[current_start].push_back(current_end);
-		g[current_end].push_back(current_start);
 
-		h[current_start].push_back(x);
-		h[current_end].push_back(x);
+		current_start--; current_end--;
+		if (find(g[current_start].begin(), g[current_start].end(), current_end) == g[current_start].end())//if element don't exist
+		{
+			g[current_start].push_back(current_end);
+			g[current_end].push_back(current_start);
+
+			h[current_start].push_back(x);
+			h[current_end].push_back(x);
+		}else { x--;}
 	}
 	return { number_of_vertex, number_of_edges };
 }
 
 
-int main() {
-	int number_of_vertex=0, number_of_edges=0, conection_start=0, conection_end=0, minimum_vertex_number=0,menu=-1;
+int main(){
+	int number_of_vertex = 0, number_of_edges = 0, conection_start = 0, conection_end = 0, minimum_vertex_number = 0, menu = -1, graph_select = 0;
 
-	//data_from_file(number_of_vertex, number_of_edges, conection_start, conection_end);
-	generate_graph(number_of_vertex, number_of_edges, conection_start, conection_end);
-	
+	cout << "Select graph" << endl << "1 --- From file" << endl << "2 --- Generate" << endl;
+	for (graph_select; graph_select < 1 || graph_select > 2;)
+	{
+		cin >> graph_select;
+		if (graph_select < 1 || graph_select > 2)
+		{
+			cout << "Wrong number" << endl;
+		}
+	}
+	cout << endl;
+	if (graph_select == 1)
+	{
+		data_from_file(number_of_vertex, number_of_edges, conection_start, conection_end);
+	}
+	if (graph_select == 2)
+	{
+		generate_graph(number_of_vertex, number_of_edges, conection_start, conection_end);
+	}
+
 	Show_conections();
 
 	for (menu; menu != 0; )
@@ -400,6 +465,7 @@ int main() {
 			Brute_Force_1(number_of_vertex, number_of_edges);
 			printf("Czas wykonywania: %lu ms\n", clock() - start);
 		}
+		Best_solution();
 	}
 
 	//data_to_file(number_of_vertex, number_of_edges);
