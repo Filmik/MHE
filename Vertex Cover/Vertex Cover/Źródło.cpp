@@ -44,12 +44,61 @@ void Save_solution_if_the_best(vector<int> solution, float current_solution_scor
 
 void Show_best_solution(vector<int> best_selected_vertexes,float best_solution)
 {
-	cout << "best_solution= " << best_solution << endl;
+	cout << endl<<"------------------------------------------"<<endl;
+	cout << "The best found solution:" << endl;
+	cout << "Score of best_solution= " << best_solution << endl;
 
+	cout << "Vertexes in solution:" << endl;
 	for (int x = 0; x < best_selected_vertexes.size(); x++)
 	{
-		cout << "SOLUTIONS:" << best_selected_vertexes[x] << endl;
+		cout << x +1<<":" << best_selected_vertexes[x] << endl;
 	}
+	cout <<"------------------------------------------";
+}
+
+void Save_solution_in_tabu_vector(vector<vector<int>>& tabu_solutins, vector<int> random_solution, int& number_of_tabu_solution,int tabu_max_size)
+{	
+	bool increment = true;
+	if (tabu_solutins.size()< tabu_max_size || number_of_tabu_solution==0)
+	{
+		tabu_solutins.resize(number_of_tabu_solution + 1);
+	}else 
+	{
+		number_of_tabu_solution -= tabu_max_size;
+		increment=false;
+	}
+	if(tabu_solutins[number_of_tabu_solution].size()>0)
+	{tabu_solutins[number_of_tabu_solution].clear();}
+	for (int x = 0; x < random_solution.size(); x++)
+	{
+		tabu_solutins[number_of_tabu_solution].push_back(random_solution[x]);
+	}
+	if (increment==true)
+	{
+		number_of_tabu_solution++;
+	}
+}
+
+bool Check_if_solution_is_tabu(vector<vector<int>> tabu_solutins, vector<int> random_solution)
+{
+	bool the_same_solution = true;
+	for (int x=0; x< tabu_solutins.size();x++)
+	{
+		if (tabu_solutins[x].size() == random_solution.size())
+		{
+			for (int y = 0; y < random_solution.size(); y++)
+			{
+				if (tabu_solutins[x][y] != random_solution[y])//if solutions are different
+				{
+					y == random_solution.size();
+					the_same_solution = false;
+				}
+			}
+			if (the_same_solution==true)
+			{return true;}
+		}
+	}
+	return false;
 }
 
 float Rating_solution(vector<int> solution, int number_of_vertex, int number_of_edges,vector<vector<int>> vertex_to_edges_conections) //solution contains selected vertexes
@@ -58,7 +107,8 @@ float Rating_solution(vector<int> solution, int number_of_vertex, int number_of_
 	float current_solution_score =0;
 	vector<int> entered_edges;
 	//how many vertexes and edges
-	for (int x=0; x < solution.size(); x++) {
+	for (int x=0; x < solution.size(); x++)
+	{
 		cout << "SOLUTIONS:" << solution[x] << endl;
 		b = solution[x];
 		b--;
@@ -97,10 +147,10 @@ float Rating_solution(vector<int> solution, int number_of_vertex, int number_of_
 
 	return current_solution_score;
 }
-//Popraw solution 1
+//ODDAJ solution 1
 void Climbing_Algorithm(int number_of_vertex, int number_of_edges,float& best_solution,vector<int>& best_selected_vertexes, vector<vector<int> >vertex_to_edges_conections)
 {
-	int type_of_algorithm=0, range;
+	int type_of_algorithm=0, number_of_iterations,check_range,remembr_vertex;
 	float current_solution_score=0;
 	vector<int>random_solution;
 	random_device rd; // obtain a random number from hardware
@@ -120,53 +170,92 @@ void Climbing_Algorithm(int number_of_vertex, int number_of_edges,float& best_so
 		}
 	}
 
-	cout << "Select range of algorythm: ";
-	cin >> range;
+	cout << "Select number of iterations: ";
+	cin >> number_of_iterations;
 	cout << endl;
 	
 	if (type_of_algorithm == 1) {//solution 1
 		current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);//rate random solution
 		Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
-		for (int x = 0; x < range; x++)
+		for (int x = 0; x < number_of_iterations; x++)
 		{
-			if (current_solution_score == best_solution)
+			//remove element
+			if (random_solution.size() > 1)
 			{
-				//Zrob to co nizej ale bez warunku z returnem, plus zrob ze od nowego najlepszego zrobi znow ten algorytm (ta pentla tyle razy ile range, zmien nazwe range na ilosc przejsc czy cos), plus dodaj i odejmij po jednym z danego rozwionzania (lub wiencej jak mi sie uda)
-				if (random_solution.size()>x)
-				{ 
-					if (random_solution[x] < number_of_vertex)
-					{
-						random_solution[x] = random_solution[x] + 1;
-						current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);//rate random solution
-						Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
-						if (current_solution_score < best_solution)
-						{
-							return;
-						}
-						random_solution[x] = random_solution[x] - 1;
-					}
-					if (random_solution[x] > 1)
-					{
-						random_solution[x] = random_solution[x] - 1;
-						current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);//rate random solution
-						Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
-						if (current_solution_score < best_solution)
-						{
-							return;
-						}
-						random_solution[x] = random_solution[x] + 1;
-					}
-				}
+				remembr_vertex = random_solution.back();
+				random_solution.pop_back();
+				current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);//rate random solution
+				Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+				random_solution.push_back(remembr_vertex);
 			}
-			if (current_solution_score < best_solution)
+			//add element
+			random_solution.push_back(distr(eng));
+			current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
+			Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+			random_solution.pop_back();
+
+			for (int y = 0; y < random_solution.size(); y++)
 			{
-				return;
+				check_range = random_solution[y];
+				check_range += 1;
+				if (check_range < number_of_vertex && check_range>0)
+				{
+					random_solution[y] = random_solution[y] + 1;
+					current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
+					Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+
+					if (random_solution.size() > 1)
+					{
+						remembr_vertex = random_solution.back();
+						random_solution.pop_back();
+						current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);//rate random solution
+						Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+						random_solution.push_back(remembr_vertex);
+					}
+
+					random_solution.push_back(distr(eng));
+					current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
+					Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+					random_solution.pop_back();
+
+					random_solution[y] = random_solution[y] - 1;
+				}
+				check_range = random_solution[y];
+				check_range -= 1;
+				if (check_range < number_of_vertex && check_range>0)
+				{
+
+					random_solution[y] = random_solution[y] - 1;
+					current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);//rate random solution
+					Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+
+					if (random_solution.size() > 1)
+					{
+						remembr_vertex = random_solution.back();
+						random_solution.pop_back();
+						current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);//rate random solution
+						Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+						random_solution.push_back(remembr_vertex);
+					}
+
+					random_solution.push_back(distr(eng));
+					current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);//rate random solution
+					Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+					random_solution.pop_back();
+
+					random_solution[y] = random_solution[y] + 1;
+				}
+				if (random_solution == best_selected_vertexes)
+				{
+					return;
+				}
+				random_solution = best_selected_vertexes;
 			}
 		}
 	}
 
 	if (type_of_algorithm == 2) {//solution 2
-			int vertex_to_change, vertex_new_value, check_range, puls_or_minus, permissible_number_of_worse_solutions, current_number_of_worse_solutions=0;
+			int vertex_to_change, vertex_new_value, puls_or_minus, permissible_number_of_worse_solutions, current_number_of_worse_solutions=0;
 			cout << "Permissible number of worse solutions: ";
 			cin >> permissible_number_of_worse_solutions;
 			cout << endl;
@@ -175,7 +264,7 @@ void Climbing_Algorithm(int number_of_vertex, int number_of_edges,float& best_so
 			current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);//rate random solution
 			Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
 
-			for (int a = range; a > 0; a--)
+			for (int a = number_of_iterations; a > 0; a--)
 			{
 				uniform_int_distribution<> nr_vertex(0, random_solution.size() - 1);
 				vertex_to_change = nr_vertex(eng);
@@ -189,11 +278,11 @@ void Climbing_Algorithm(int number_of_vertex, int number_of_edges,float& best_so
 					if (check_range < number_of_vertex && check_range>0)
 					{
 						random_solution[vertex_to_change] += vertex_new_value;
-						current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);//rate random solution
+						current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
 						Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
 					}else {//add element to solution
 						random_solution.push_back(vertex_new_value);
-						current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);//rate random solution
+						current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
 						Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
 					}
 				}
@@ -229,11 +318,15 @@ void Climbing_Algorithm(int number_of_vertex, int number_of_edges,float& best_so
 			}
 	}
 }
-//Popraw
-void Tabu_Algorithm(int number_of_vertex, int number_of_edges)
+//Sprawdz i ODDAJ
+void Tabu_Algorithm(int number_of_vertex, int number_of_edges, float& best_solution, vector<int>& best_selected_vertexes, vector<vector<int> >vertex_to_edges_conections)
 {
-	int range,start_solution;
+	int number_of_iterations, start_solution, check_range, remembr_vertex, number_of_tabu_solution=0, tabu_max_size ;
+	float current_solution_score = 0;
 	vector<int>random_solution;
+	vector<vector<int> >tabu_solutins;//vector for tabu solutions, x---number of tabu solution  y---vertexes in solution(solution nr x)
+	//vector<vector<int> >close_solutins;// x---number of close solution  y---vertexes from random solution
+
 	random_device rd; // obtain a random number from hardware
 	mt19937 eng(rd()); // seed the generator
 	uniform_int_distribution<> distr(1, number_of_vertex);// define the range
@@ -241,20 +334,128 @@ void Tabu_Algorithm(int number_of_vertex, int number_of_edges)
 	{
 		random_solution.push_back(distr(eng));
 	}
-	cout << "Select range of algorythm: ";
-	cin >> range;
+	cout << "Select number of iterations: ";
+	cin >> number_of_iterations;
 	cout << endl;
 
-	vector<vector<int> >tabu_solutins;//wektor na rozwi¹zania tabu, x---number of tabu solution  y---vertexes in sol;ution(solution nr x)
-	vector<vector<int> >close_solutins;//wektor na aktualnych sonsiadow + sprawdzanie czy sonsiad nie jest w tabu
+	cout << "Select size of tabu list: ";
+	cin >> tabu_max_size;
+	cout << endl;
 
-	
-	
+	//sprawdzanie wszystkich aktualnych sonsiadow(jeœli nie s¹ w tabu) i wybieranie najlepszego, reszta do tabu
 
-	//sprawdzanie wszystkich aktualnych sonsiadow i wybieranie najlepszego, reszta do tabu
-
-	start_solution = random_solution[0];
+	current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);//rate random solution
+	Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
 	
+	Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);//add random_solution to tabu vector
+	
+	for (int x = 0; x < number_of_iterations; x++)
+	{
+		//remove element
+		if (random_solution.size() > 1)
+		{
+			remembr_vertex = random_solution.back();
+			random_solution.pop_back();
+			if (false == Check_if_solution_is_tabu(tabu_solutins, random_solution))
+			{
+				current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
+				Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+				Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);
+			}
+			random_solution.push_back(remembr_vertex);
+			
+		}
+		//add element
+		random_solution.push_back(distr(eng));
+		if (false == Check_if_solution_is_tabu(tabu_solutins, random_solution))
+		{
+			current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
+			Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+			Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);
+		}
+		random_solution.pop_back();
+
+		for (int y = 0; y < random_solution.size(); y++)
+		{
+			check_range = random_solution[y];
+			check_range += 1;
+			if (check_range < number_of_vertex && check_range>0)
+			{
+				random_solution[y] = random_solution[y] + 1;
+				if (false == Check_if_solution_is_tabu(tabu_solutins, random_solution))
+				{
+					current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
+					Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+					Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);
+				}
+
+				if (random_solution.size() > 1)
+				{
+					remembr_vertex = random_solution.back();
+					random_solution.pop_back();
+					if (false == Check_if_solution_is_tabu(tabu_solutins, random_solution))
+					{
+						current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
+						Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+						Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);
+					}
+					random_solution.push_back(remembr_vertex);
+				}
+
+				random_solution.push_back(distr(eng));
+				if (false == Check_if_solution_is_tabu(tabu_solutins, random_solution))
+				{
+					current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
+					Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+					Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);
+				}
+				random_solution.pop_back();
+
+				random_solution[y] = random_solution[y] - 1;
+			}
+			check_range = random_solution[y];
+			check_range -= 1;
+			if (check_range < number_of_vertex && check_range>0)
+			{
+				random_solution[y] = random_solution[y] - 1;
+				if (false == Check_if_solution_is_tabu(tabu_solutins, random_solution))
+				{
+					current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
+					Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+					Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);
+				}
+
+				if (random_solution.size() > 1)
+				{
+					remembr_vertex = random_solution.back();
+					random_solution.pop_back();
+					if (false == Check_if_solution_is_tabu(tabu_solutins, random_solution))
+					{
+						current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
+						Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+						Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);
+					}
+					random_solution.push_back(remembr_vertex);
+				}
+
+				random_solution.push_back(distr(eng));
+				if (false == Check_if_solution_is_tabu(tabu_solutins, random_solution))
+				{
+					current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
+					Save_solution_if_the_best(random_solution, current_solution_score, best_solution, best_selected_vertexes);
+					Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);
+				}
+				random_solution.pop_back();
+
+				random_solution[y] = random_solution[y] + 1;
+			}
+			if (random_solution == best_selected_vertexes)
+			{
+				return;
+			}
+			random_solution = best_selected_vertexes;
+		}
+	}
 }
 
 void Brute_Force_2(vector<int> all_vertexes, int reqLen, int start, int currLen, vector<bool> check, int len, int number_of_edges,float& best_solution, vector<int>& best_selected_vertexes,vector<vector<int>>& vertex_to_edges_conections)
@@ -352,11 +553,11 @@ tuple<int, int> data_from_file(int& number_of_vertex, int& number_of_edges, int 
 	return { number_of_vertex,number_of_edges };
 }
 
-void data_to_file(int number_of_vertex, int number_of_edges, vector<vector<int>> vertex_to_vertexes_conections, vector<vector<int>> vertex_to_edges_conections)
+void simple_graph_visualization_to_file(int number_of_vertex, int number_of_edges, vector<vector<int>> vertex_to_vertexes_conections, vector<vector<int>> vertex_to_edges_conections)
 {
 	fstream output_data;
-	output_data << "-------------------------------------------------------------------------------------------" << endl;
 	output_data.open("output_data.txt", ios::out | ios::app);
+	output_data << "-------------------------------------------------------------------------------------------" << endl;
 	output_data << "Numer of vertex: " << number_of_vertex << endl;
 	output_data << "Number of edges: " << number_of_edges << endl;
 	output_data << "Example: X---edge_nr---Y" << endl;
@@ -378,6 +579,47 @@ void data_to_file(int number_of_vertex, int number_of_edges, vector<vector<int>>
 	output_data <<"-------------------------------------------------------------------------------------------"<<endl;
 	output_data.close();
 }
+
+void data_for_graphviz(int number_of_vertex, int number_of_edges, vector<vector<int>> vertex_to_vertexes_conections, vector<vector<int>> vertex_to_edges_conections, vector<int> best_selected_vertexes)
+{
+	fstream used_graph_data;
+	fstream best_solution_graph;
+	used_graph_data.open("used_graph_data.txt", ios::out | ios::trunc);
+	best_solution_graph.open("best_solution_graph.txt", ios::out | ios::trunc);
+	used_graph_data << "graph used{" << endl;
+	for (int x = 0; x < vertex_to_vertexes_conections.size(); x++)
+	{
+		for (int y = 0; y < vertex_to_vertexes_conections[x].size(); y++)
+		{
+			if (vertex_to_vertexes_conections[x][y] > x || x == 0)
+			{
+				used_graph_data << x + 1 << " -- " << vertex_to_vertexes_conections[x][y] + 1 << endl;//dodaj nr krawendzi
+			}
+		}
+	}
+	used_graph_data << "}";
+	best_solution_graph << "graph best{" << endl;
+	for (int x = 0; x < vertex_to_vertexes_conections.size(); x++)
+	{
+		for (int y = 0; y < vertex_to_vertexes_conections[x].size(); y++)
+		{
+			if (vertex_to_vertexes_conections[x][y] > x || x == 0)
+			{//nie zapisuje wszystkich zaznaczonych krawendzi
+				if(find(best_selected_vertexes.begin(), best_selected_vertexes.end(), x) == best_selected_vertexes.end())//if element don't exist
+				{
+					best_solution_graph << x + 1 << " -- " << vertex_to_vertexes_conections[x][y] + 1 << endl;
+				}
+				else {
+					best_solution_graph << x + 1 << " -- " << vertex_to_vertexes_conections[x][y] + 1<< " [color = \"red\"]" << endl;
+				}
+			}
+		}
+	}
+	best_solution_graph << "}";
+	used_graph_data.close();
+	best_solution_graph.close();
+}
+
 
 tuple<int, int> generate_graph(int& number_of_vertex, int& number_of_edges, int conection_start, int conection_end, vector<vector<int>>& vertex_to_vertexes_conections, vector<vector<int>>& vertex_to_edges_conections)
 {
@@ -434,8 +676,9 @@ int main(){
 	int number_of_vertex = 0, number_of_edges = 0, conection_start = 0, conection_end = 0, minimum_vertex_number = 0, menu = -1, graph_select = 0;
 	vector<vector<int> > vertex_to_vertexes_conections,vertex_to_edges_conections;// vertex_conections= x-vertex_1 y-vertex_2, vertex_to_edges_conections= x-vertex y-number of edge
 	vector<int >solution, best_selected_vertexes;
-	float best_solution = 0;
-	
+	float best_solution = 0;//zmien nazwe na best_solution_score zeby bylo wiadomo co to jest
+	//dodaj czyszczenie nalepszego wyniku zeby mozna bylo wykonywac kilka algorytmow po sobie 
+	//dadaj mo¿liwaoœæ wczytania nowego grafu lub wygenerowania nowego
 	cout << "Select graph" << endl << "1 --- From file" << endl << "2 --- Generate" << endl;
 	for (graph_select; graph_select < 1 || graph_select > 2;)
 	{
@@ -473,7 +716,7 @@ int main(){
 		if (menu == 2)
 		{
 			clock_t start = clock();
-			Tabu_Algorithm(number_of_vertex, number_of_edges);
+			Tabu_Algorithm(number_of_vertex,number_of_edges,best_solution,best_selected_vertexes,vertex_to_edges_conections);
 			printf("Czas wykonywania: %lu ms\n", clock() - start);
 		}
 		if (menu == 3)
@@ -485,6 +728,7 @@ int main(){
 		Show_best_solution(best_selected_vertexes,best_solution);
 	}
 
-	//data_to_file(number_of_vertex, number_of_edges, vertex_to_vertexes_conections, vertex_to_edges_conections);
+	//simple_graph_visualization_to_file(number_of_vertex, number_of_edges, vertex_to_vertexes_conections, vertex_to_edges_conections);
+	data_for_graphviz(number_of_vertex, number_of_edges, vertex_to_vertexes_conections, vertex_to_edges_conections, best_selected_vertexes);
 	return 0;
 }
