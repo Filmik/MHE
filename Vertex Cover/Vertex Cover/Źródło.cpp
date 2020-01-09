@@ -143,8 +143,7 @@ float Rating_solution(vector<int> solution, int number_of_vertex, int number_of_
 	current_solution_score += (float)number_of_vertex / (float)vertex_in_solution;//points for number of  used vertex
 	current_solution_score *= ((float)number_of_edges * pow(((float)edges_in_soluton-(float)number_of_duplicats), 2.0));//points for covering edges
 	current_solution_score -= (pow(number_of_duplicats, 2.0) * 4);//minus points for duplicats
-	current_solution_score /= 1000;
-
+	current_solution_score /= 10000;
 	return current_solution_score;
 }
 //ODDAJ solution 1
@@ -434,6 +433,96 @@ void Tabu_Algorithm(int number_of_vertex, int number_of_edges, float& best_solut
 		}
 	}
 }
+//Jak zrobiæ funkcje prawdopodobieñstwa
+void Simulated_annealing(int number_of_vertex, int number_of_edges, float& best_solution_score, vector<int>& best_selected_vertexes, vector<vector<int> >vertex_to_edges_conections, int number_of_iterations, int temperature)
+{
+	int minimum_temperature=0, check_range, vertex_to_change, vertex_new_value, puls_or_minus;
+	float current_solution_score = 0, score_of_new_solution = 0, probability_of_change=0;
+	vector<int>main_solution, new_solution;
+	uniform_int_distribution<> val_vertex(1, number_of_vertex);
+	uniform_int_distribution<> plus_minus(1, 2);
+
+	random_device rd; // obtain a random number from hardware
+	mt19937 eng(rd()); // seed the generator
+	uniform_int_distribution<> distr(1, number_of_vertex);// define the range
+	for (int x = 0; x < distr(eng); x++)
+	{
+		main_solution.push_back(distr(eng));
+	}
+
+	current_solution_score = Rating_solution(main_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
+	Save_solution_if_the_best(main_solution, current_solution_score, best_solution_score, best_selected_vertexes);
+
+
+	new_solution = main_solution;
+
+	for (int x = number_of_iterations; x > 0; x--)
+	{
+		for (temperature; temperature > minimum_temperature; temperature--)
+		{
+			uniform_int_distribution<> nr_vertex(0, new_solution.size() - 1);
+			vertex_to_change = nr_vertex(eng);
+			vertex_new_value = val_vertex(eng);
+			puls_or_minus = plus_minus(eng);
+
+
+			if (puls_or_minus == 1)
+			{
+				check_range = new_solution[vertex_to_change];
+				check_range += vertex_new_value;
+				if (check_range < number_of_vertex && check_range>0)
+				{
+					new_solution[vertex_to_change] += vertex_new_value;
+					score_of_new_solution = Rating_solution(new_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
+					Save_solution_if_the_best(new_solution, current_solution_score, best_solution_score, best_selected_vertexes);
+				}
+				else {//add element to solution
+					new_solution.push_back(vertex_new_value);
+					score_of_new_solution = Rating_solution(new_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
+					Save_solution_if_the_best(new_solution, current_solution_score, best_solution_score, best_selected_vertexes);
+				}
+			}
+			if (puls_or_minus == 2)
+			{
+				check_range = new_solution[vertex_to_change];
+				check_range -= vertex_new_value;
+				if (check_range < number_of_vertex && check_range>0)
+				{
+					new_solution[vertex_to_change] -= vertex_new_value;
+					score_of_new_solution = Rating_solution(new_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);//rate random solution
+					Save_solution_if_the_best(new_solution, current_solution_score, best_solution_score, best_selected_vertexes);
+				}
+				else {//delete element from solution
+					if (new_solution.size() > 1) {
+						new_solution.pop_back();
+						score_of_new_solution = Rating_solution(new_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);//rate random solution
+						Save_solution_if_the_best(new_solution, current_solution_score, best_solution_score, best_selected_vertexes);
+					}
+				}
+			}
+
+			if (score_of_new_solution >= current_solution_score)
+			{
+				main_solution = new_solution;
+				current_solution_score = score_of_new_solution;
+			}
+			else {
+				if (score_of_new_solution < current_solution_score)
+				{
+					probability_of_change = -(probability_of_change - current_solution_score) / temperature;
+					//jakieœ random z uwzglendnieniem probability_of_change(im wiensze tym wienksza szansa) + temperature(im wyzsza tym wien)
+					if (probability_of_change > 1)
+					{
+						main_solution = new_solution;
+						current_solution_score = score_of_new_solution;
+					}
+				}
+			}
+		}
+	}
+
+}
+
 //ODDAJ
 void Brute_Force_2(vector<int> all_vertexes, int reqLen, int start, int currLen, vector<bool> check, int len, int number_of_edges,float& best_solution, vector<int>& best_selected_vertexes,vector<vector<int>>& vertex_to_edges_conections)
 {
@@ -556,10 +645,11 @@ void simple_graph_visualization_to_file(int number_of_vertex, int number_of_edge
 	output_data <<"-------------------------------------------------------------------------------------------"<<endl;
 	output_data.close();
 }
-//Dokoñcz
+//Oddaj
 void data_for_graphviz(int number_of_vertex, int number_of_edges, vector<vector<int>> vertex_to_vertexes_conections, vector<vector<int>> vertex_to_edges_conections, vector<int> best_selected_vertexes)
 {
-	bool ala = false, sasaas=false;
+	bool slelected_vertex = false;
+	int nr_of_edge=0;
 	fstream used_graph_data;
 	fstream best_solution_graph;
 	used_graph_data.open("used_graph_data.txt", ios::out | ios::trunc);
@@ -567,31 +657,57 @@ void data_for_graphviz(int number_of_vertex, int number_of_edges, vector<vector<
 	used_graph_data << "graph used{" << endl;
 	for (int x = 0; x < vertex_to_vertexes_conections.size(); x++)
 	{
+		if (vertex_to_vertexes_conections[x].size() == 0)
+		{
+			used_graph_data << x + 1 << endl;
+		}
 		for (int y = 0; y < vertex_to_vertexes_conections[x].size(); y++)
 		{
 			if (vertex_to_vertexes_conections[x][y] > x || x == 0)
 			{
-				used_graph_data << x + 1 << " -- " << vertex_to_vertexes_conections[x][y] + 1 << endl;//dodaj nr krawendzi
+				nr_of_edge++;
+				used_graph_data << x + 1 << " -- " << vertex_to_vertexes_conections[x][y] + 1 <<"[label="<<nr_of_edge<<"]"<< endl;//nr_of_edge different from vertex_to_edges_conections
 			}
 		}
 	}
 	used_graph_data << "}";
+
+	nr_of_edge = 0;
+
 	best_solution_graph << "graph best{" << endl;
 	for (int x = 0; x < vertex_to_vertexes_conections.size(); x++)
 	{
+		if (vertex_to_vertexes_conections[x].size() == 0)
+		{
+			used_graph_data << x + 1 << endl;
+		}
 		for (int y = 0; y < vertex_to_vertexes_conections[x].size(); y++)
 		{
 			if (vertex_to_vertexes_conections[x][y] > x || x == 0)
-			{//nie zapisuje wszystkich zaznaczonych krawendzi
-				if(find(best_selected_vertexes.begin(), best_selected_vertexes.end(), vertex_to_vertexes_conections[x][y]) == best_selected_vertexes.end())//if element don't exist
+			{
+				nr_of_edge++;
+				slelected_vertex = false;
+				for (int z = 0; z < best_selected_vertexes.size(); z++) 
 				{
-					best_solution_graph << x + 1 << " -- " << vertex_to_vertexes_conections[x][y] + 1 << endl;
-				}else{
-					best_solution_graph << "S" << x + 1 << " -- " << vertex_to_vertexes_conections[x][y] + 1 << " [color = \"red\"]" << endl;
+					if (vertex_to_vertexes_conections[x][y]+1== best_selected_vertexes[z]&& slelected_vertex == false)
+					{
+						best_solution_graph << x + 1 << " -- " << vertex_to_vertexes_conections[x][y] + 1 << "[color = \"red\" label=" << nr_of_edge << "]" << endl;
+						slelected_vertex = true;
+					}
+					if ( x + 1 == best_selected_vertexes[z]&& slelected_vertex ==false)
+					{
+						best_solution_graph <<x + 1 << " -- " << vertex_to_vertexes_conections[x][y] + 1 << "[color = \"red\" label=" << nr_of_edge << "]" << endl;
+						slelected_vertex = true;
+					}
+				}
+				if(slelected_vertex==false)
+				{
+					best_solution_graph << x + 1 << " -- " << vertex_to_vertexes_conections[x][y] + 1 <<"[label=" << nr_of_edge << "]"<<endl;
 				}
 			}
 		}
 	}
+	
 	best_solution_graph << "}";
 	used_graph_data.close();
 	best_solution_graph.close();
@@ -639,10 +755,19 @@ tuple<int, int> generate_graph(int& number_of_vertex, int& number_of_edges, int 
 	}
 	return { number_of_vertex, number_of_edges };
 }
-
+//Oddaj
 void Make_stat(int number_of_vertex, int number_of_edges, int  conection_start, int conection_end, vector<vector<int> > vertex_to_vertexes_conections, vector<vector<int> > vertex_to_edges_conections, vector<int> solution, vector<int> best_selected_vertexes, float best_solution_score,int number_of_iterations,int type_of_algorithm,int tabu_max_size)
 {
 	int nr_of_algorithm_iterations = 25;
+	fstream Climbing_Algorithm_stat, Tabu_Algorithm_stat, Brute_Force_stat, Data_for_gnuplot;
+	Climbing_Algorithm_stat.open("Climbing_Algorithm_stat.txt", ios::out | ios::trunc);
+	Tabu_Algorithm_stat.open("Tabu_Algorithm_stat.txt", ios::out | ios::trunc);
+	Brute_Force_stat.open("Brute_Force_stat.txt", ios::out | ios::trunc);
+	Data_for_gnuplot.open("Data.dat", ios::out | ios::trunc);
+	Climbing_Algorithm_stat.close();
+	Tabu_Algorithm_stat.close();
+	Brute_Force_stat.close();
+	Data_for_gnuplot.close();
 
 	type_of_algorithm = 1;
 	for (int x = 0; x < nr_of_algorithm_iterations; x++)
@@ -657,7 +782,6 @@ void Make_stat(int number_of_vertex, int number_of_edges, int  conection_start, 
 	
 		clock_t start = clock();
 		Climbing_Algorithm(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, vertex_to_edges_conections, number_of_iterations, type_of_algorithm);
-		fstream Climbing_Algorithm_stat;
 		Climbing_Algorithm_stat.open("Climbing_Algorithm_stat.txt", ios::out | ios::app);
 		Climbing_Algorithm_stat << "-------------------------------------------------------------------------------------------" << endl;
 		Climbing_Algorithm_stat << "Numer of vertex: " << number_of_vertex << endl;
@@ -666,12 +790,17 @@ void Make_stat(int number_of_vertex, int number_of_edges, int  conection_start, 
 		Climbing_Algorithm_stat << "-------------------------------------------------------------------------------------------" << endl;
 		Climbing_Algorithm_stat.close();
 
+		Data_for_gnuplot.open("Data.dat", ios::out | ios::app);
+		Data_for_gnuplot << number_of_vertex <<" ";
+		Data_for_gnuplot << clock() - start <<" ";
+		Data_for_gnuplot << best_solution_score <<" ";
+		Data_for_gnuplot.close();
+
 		solution.clear(), best_selected_vertexes.clear();
 		best_solution_score = 0;
 
 		start = clock();
 		Tabu_Algorithm(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, vertex_to_edges_conections, number_of_iterations, tabu_max_size);
-		fstream Tabu_Algorithm_stat;
 		Tabu_Algorithm_stat.open("Tabu_Algorithm_stat.txt", ios::out | ios::app);
 		Tabu_Algorithm_stat << "-------------------------------------------------------------------------------------------" << endl;
 		Tabu_Algorithm_stat << "Numer of vertex: " << number_of_vertex << endl;
@@ -680,14 +809,18 @@ void Make_stat(int number_of_vertex, int number_of_edges, int  conection_start, 
 		Tabu_Algorithm_stat << "-------------------------------------------------------------------------------------------" << endl;
 		Tabu_Algorithm_stat.close();
 
-		if (x < 8) 
+		Data_for_gnuplot.open("Data.dat", ios::out | ios::app);
+		Data_for_gnuplot << clock() - start << " ";
+		Data_for_gnuplot << best_solution_score << " ";
+		Data_for_gnuplot.close();
+
+		if (x < 10) 
 		{
 			solution.clear(), best_selected_vertexes.clear();
 			best_solution_score = 0;
 
 			start = clock();
 			Brute_Force_1(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, vertex_to_edges_conections);
-			fstream Brute_Force_stat;
 			Brute_Force_stat.open("Brute_Force_stat.txt", ios::out | ios::app);
 			Brute_Force_stat << "-------------------------------------------------------------------------------------------" << endl;
 			Brute_Force_stat << "Numer of vertex: " << number_of_vertex << endl;
@@ -695,13 +828,21 @@ void Make_stat(int number_of_vertex, int number_of_edges, int  conection_start, 
 			Brute_Force_stat << "Score= " << best_solution_score << endl;
 			Brute_Force_stat << "-------------------------------------------------------------------------------------------" << endl;
 			Brute_Force_stat.close();
+
+			Data_for_gnuplot.open("Data.dat", ios::out | ios::app);
+			Data_for_gnuplot << clock() - start << " ";
+			Data_for_gnuplot << best_solution_score << " ";
+			Data_for_gnuplot.close();
 		}
+		Data_for_gnuplot.open("Data.dat", ios::out | ios::app);
+		Data_for_gnuplot <<endl;
+		Data_for_gnuplot.close();
 	}
 }
 
 
 int main(){
-	int number_of_vertex = 0, number_of_edges = 0, conection_start = 0, conection_end = 0, minimum_vertex_number = 0, menu = 4, graph_select = 0, number_of_iterations=0, type_of_algorithm=0, tabu_max_size=0;
+	int number_of_vertex = 0, number_of_edges = 0, conection_start = 0, conection_end = 0, minimum_vertex_number = 0, menu = 5, graph_select = 0, number_of_iterations=0, type_of_algorithm=0, tabu_max_size=0, temperature=0;
 	vector<vector<int> > vertex_to_vertexes_conections,vertex_to_edges_conections;// vertex_conections= x-vertex_1 y-vertex_2, vertex_to_edges_conections= x-vertex y-number of edge
 	vector<int >solution, best_selected_vertexes;
 	float best_solution_score = 0;
@@ -710,7 +851,7 @@ int main(){
 
 	for (menu; menu != 0; )
 	{
-		if (menu == 4)
+		if (menu == 5)
 		{
 			vertex_to_vertexes_conections.clear(), vertex_to_edges_conections.clear(), solution.clear(), best_selected_vertexes.clear();
 			graph_select = 0, best_solution_score=0;
@@ -745,7 +886,7 @@ int main(){
 			Show_conections(vertex_to_vertexes_conections, vertex_to_edges_conections);
 		}
 		cout<<"------------------------------------------" << endl;
-		cout << "Select algorithm:                        |" << endl << "1 --- Climbing                           |" << endl << "2 --- Tabu                               |" << endl << "3 --- Brute Force                        |" << endl << "4 --- Select new graph                   |" << endl << "5 --- Save simple graph visualization    |" << endl << "6 --- Save graph for graphviz            |" << endl << "0 --- exit                               |" << endl; ;
+		cout << "Select algorithm:                        |" << endl << "1 --- Climbing                           |" << endl << "2 --- Tabu                               |" <<endl<< "3 --- Simulated annealing                |" << endl << "4 --- Brute Force                        |" << endl << "5 --- Select new graph                   |" << endl << "6 --- Save simple graph visualization    |" << endl << "7 --- Save graph for graphviz            |" <<endl<<"8 --- Create algorithms statistics       |"<< endl << "0 --- exit                               |" << endl; ;
 		cout << "------------------------------------------" << endl;
 		cin >> menu;
 		cout<< endl;
@@ -781,24 +922,40 @@ int main(){
 		}
 		if (menu == 3)
 		{
+			cout << "Select number of iterations: ";
+			cin >> number_of_iterations;
+			cout << endl;
+			cout << "Select temperature: ";
+			cin >> temperature;
+			cout << endl;
+			clock_t start = clock();
+			Simulated_annealing(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, vertex_to_edges_conections, number_of_iterations, temperature);
+			printf("Czas wykonywania: %lu ms\n", clock() - start);
+		}
+		if (menu == 4)
+		{
 			clock_t start = clock();
 			Brute_Force_1(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, vertex_to_edges_conections);
 			printf("Czas wykonywania: %lu ms\n", clock() - start);
 		}
-		if (menu == 1 || menu == 2 || menu == 3)
+		if (menu == 1 || menu == 2 || menu == 3 || menu==4)
 		{
 			Show_best_solution(best_selected_vertexes, best_solution_score);
 			best_solution_score = 0;
 		}
-		if (menu == 5)
+		if (menu == 6)
 		{
 			simple_graph_visualization_to_file(number_of_vertex, number_of_edges, vertex_to_vertexes_conections, vertex_to_edges_conections);
 		}
-		if (menu == 6)
+		if (menu == 7)
 		{
 			data_for_graphviz(number_of_vertex, number_of_edges, vertex_to_vertexes_conections, vertex_to_edges_conections, best_selected_vertexes);
 		}
+		if (menu == 8)
+		{
+			Make_stat(number_of_vertex, number_of_edges, conection_start, conection_end, vertex_to_vertexes_conections, vertex_to_edges_conections, solution, best_selected_vertexes, best_solution_score, number_of_iterations, type_of_algorithm, tabu_max_size);
+		}
+	
 	}
-	Make_stat(number_of_vertex, number_of_edges, conection_start, conection_end, vertex_to_vertexes_conections,vertex_to_edges_conections,solution,best_selected_vertexes, best_solution_score, number_of_iterations, type_of_algorithm, tabu_max_size);
 	return 0;
 }
