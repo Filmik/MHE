@@ -1,0 +1,15 @@
+-------------------------------------------------------------------------------------------
+Numer of vertex: 8
+Time to find best solution: 8
+annealing= 7440ms
+annealing= 17841ms
+annealing= 42023ms
+annealing= 913ms
+annealing= 14145ms
+annealing= 11739ms
+annealing= 14745ms
+annealing= 1854ms
+annealing= 2147ms
+annealing= 8135ms
+brute= 1496ms
+-------------------------------------------------------------------------------------------

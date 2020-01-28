@@ -34,7 +34,7 @@ void Show_conections(vector<vector<int> >vertex_to_vertexes_conections,vector<ve
 
 void Save_solution_if_the_best(vector<int> solution, float current_solution_score,float& best_solution_score, vector<int >& best_selected_vertexes)
 {
-	if (current_solution_score > best_solution_score) {
+	if (current_solution_score > best_solution_score){
 		best_selected_vertexes = solution;
 		best_solution_score = current_solution_score;
 		cout << "best_solution_score= " << best_solution_score << endl;
@@ -55,61 +55,25 @@ void Show_best_solution(vector<int> best_selected_vertexes,float best_solution_s
 	}
 	cout << "------------------------------------------" << endl;
 }
-//POPRAW DODAWANIE DO TABU (USUWAJ PIERWSZY ELEMENT I DODAWAJ NOWY NA KONIEC)
-void Save_solution_in_tabu_vector(vector<vector<int>>& tabu_solutins, vector<int> random_solution, int& number_of_tabu_solution,int tabu_max_size)
+
+void Save_solution_in_tabu_vector(vector<vector<int>>& tabu_solutins, vector<int> random_solution, int& number_of_tabu_solution,int tabu_max_size, bool clear_oldest_solution)
 {	
-	bool increment = true;
-	if (tabu_solutins.size()< tabu_max_size || number_of_tabu_solution==0)
+	if (number_of_tabu_solution == tabu_max_size)
 	{
-		tabu_solutins.resize(number_of_tabu_solution + 1);
-	}else 
-	{
-		number_of_tabu_solution -= tabu_max_size;
-		increment=false;
+		clear_oldest_solution = true;
+		number_of_tabu_solution = 0;
 	}
-	//if(tabu_solutins[number_of_tabu_solution].size()>0)
-	//{tabu_solutins[number_of_tabu_solution].clear();}
-	if (increment == false)
+
+	if (clear_oldest_solution == true)
 	{
-		for (int a = 0; a < tabu_solutins.size(); a++)
-		{
-			for (int b = 0; b < tabu_solutins[a].size(); b++)
-			{
-				cout << tabu_solutins[a][b] << endl;
-			}
-			cout << "-------nr:" << a+1 << "------------" << endl;
-		}
-		cout << endl;
+		tabu_solutins[number_of_tabu_solution].clear();
 	}
+
 	for (int x = 0; x < random_solution.size(); x++)
 	{
-		//tabu_solutins[number_of_tabu_solution].push_back(random_solution[x]);//psuh front and clear??(dodaje siê na konic albo pocz¹tek zamiast zamieniaæ(zrob zemy pushowalo na x+0 puzniej x+1 puzniej x+2 itd. z restartem od zera na ostatnim elemencie, po to zeby zawsze najstarszy element byl zastampiany))
-		if (increment == false)
-		{
-			tabu_solutins[number_of_tabu_solution].push_back(random_solution[x]);
-		}
-		if (increment == true)
-		{
-
-			tabu_solutins[number_of_tabu_solution].push_back(random_solution[x]);//zamiast number_of_tabu_solution jakaœ zmienna oznaczaj¹ca który element jest najstarszy
-		}
+		tabu_solutins[number_of_tabu_solution].push_back(random_solution[x]);
 	}
-	if (increment == false)
-	{
-		for (int a = 0; a < tabu_solutins.size(); a++)
-		{
-			for (int b = 0; b < tabu_solutins[a].size(); b++)
-			{
-				cout << tabu_solutins[a][b] << endl;
-			}
-			cout << "new-------nr:" << a + 1 << "------------" << endl;
-		}
-
-	}
-	if (increment==true)
-	{
-		number_of_tabu_solution++;
-	}
+	number_of_tabu_solution++;
 }
 
 bool Check_if_solution_is_tabu(vector<vector<int>> tabu_solutins, vector<int> random_solution)
@@ -136,7 +100,7 @@ bool Check_if_solution_is_tabu(vector<vector<int>> tabu_solutins, vector<int> ra
 
 float Rating_solution(vector<int> solution, int number_of_vertex, int number_of_edges,vector<vector<int>> vertex_to_edges_conections) //solution contains selected vertexes
 {
-	int edges_in_soluton=0, vertex_in_solution = 0, number_of_duplicats = 0,b;
+	int edges_in_soluton=0, vertex_in_solution = 0, doubled_edges = 0, doubled_vertexes=0,b;
 	float current_solution_score =0;
 	vector<int> entered_edges;
 	//how many vertexes and edges
@@ -153,7 +117,7 @@ float Rating_solution(vector<int> solution, int number_of_vertex, int number_of_
 		vertex_in_solution++;
 	}
 
-	//how meny duplicats
+	//how meny duplicats(edges)
 	for (int x = 0; x < entered_edges.size(); x++)
 	{
 		int current_number_of_duplicats = 0;
@@ -168,15 +132,50 @@ float Rating_solution(vector<int> solution, int number_of_vertex, int number_of_
 		}
 		if (current_number_of_duplicats > 1)
 		{
-			number_of_duplicats+= current_number_of_duplicats-1;
+			doubled_edges += current_number_of_duplicats-1;
 		}
 	}
 
-	cout << "V=" << vertex_in_solution << " E=" << edges_in_soluton<<" D="<< number_of_duplicats <<endl;
-	current_solution_score += (float)number_of_vertex / (float)vertex_in_solution;//points for number of  used vertex
-	current_solution_score *= ((float)number_of_edges * pow(((float)edges_in_soluton-(float)number_of_duplicats), 2.0));//points for covering edges
-	current_solution_score -= (pow(number_of_duplicats, 2.0) * 4);//minus points for duplicats
-	current_solution_score /= 10000;
+	//how meny duplicats(vertexes)
+	for (int x = 0; x < solution.size(); x++)
+	{
+		int current_number_of_doubled_vertexes = 0;
+		int current_vertex_in_solution = solution[x];
+
+		for (int y = 0; y < solution.size(); y++)
+		{
+			if (current_vertex_in_solution == solution[y])
+			{
+				current_number_of_doubled_vertexes++;
+			}
+		}
+		if (current_number_of_doubled_vertexes > 1)
+		{
+			doubled_vertexes += current_number_of_doubled_vertexes - 1;
+		}
+	}
+
+	cout << "V=" << vertex_in_solution << " E=" << edges_in_soluton<<" E-D="<< doubled_edges <<" V-D="<< doubled_vertexes <<endl;
+
+	if ((edges_in_soluton - doubled_edges) == number_of_edges)//if all edges covered
+	{
+		if ((number_of_vertex - vertex_in_solution)>=0 && (edges_in_soluton - doubled_edges)>0 && doubled_vertexes==0)
+		{
+			current_solution_score += pow(((number_of_vertex - vertex_in_solution) + 1), 4);//points for number of  used vertex
+			current_solution_score *= (float)number_of_edges*pow(((float)edges_in_soluton - (float)doubled_edges), 2.0);//points for covering edges
+		}
+		current_solution_score -= (pow(doubled_edges, 2.0) * 4);//minus points for duplicats
+		current_solution_score /= 10000;
+	}else 
+	{
+		if ((number_of_vertex - vertex_in_solution) >= 0 && (edges_in_soluton - doubled_edges) > 0 && doubled_vertexes == 0)
+		{
+			current_solution_score += pow(((number_of_vertex - vertex_in_solution) + 1), 4);//points for number of  used vertex
+			current_solution_score *= (float)number_of_edges * pow(((float)edges_in_soluton - (float)doubled_edges), 2.0);//points for covering edges
+		}
+		current_solution_score -= (pow(doubled_edges, 2.0) * 4);//minus points for duplicats
+		current_solution_score /= 1000000;//two more 0 for lower quality
+	}
 	return current_solution_score;
 }
 
@@ -338,14 +337,15 @@ void Climbing_Algorithm(int number_of_vertex, int number_of_edges,float& best_so
 			}
 	}
 }
-//Popraw to dodawanie do tabu
+
 void Tabu_Algorithm(int number_of_vertex, int number_of_edges, float& best_solution_score, vector<int>& best_selected_vertexes, vector<vector<int> >vertex_to_edges_conections,int number_of_iterations,int tabu_max_size)
 {
 	int start_solution, check_range, remembr_vertex, number_of_tabu_solution=0 ;
 	float current_solution_score = 0;
+	bool clear_oldest_solution = false;
 	vector<int>random_solution;
 	vector<vector<int> >tabu_solutins;//vector for tabu solutions, x---number of tabu solution  y---vertexes in solution(solution nr x)
-
+	tabu_solutins.resize(tabu_max_size);
 	random_device rd; // obtain a random number from hardware
 	mt19937 eng(rd()); // seed the generator
 	uniform_int_distribution<> distr(1, number_of_vertex);// define the range
@@ -357,7 +357,7 @@ void Tabu_Algorithm(int number_of_vertex, int number_of_edges, float& best_solut
 	current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);//rate random solution
 	Save_solution_if_the_best(random_solution, current_solution_score, best_solution_score, best_selected_vertexes);
 	
-	Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);//add random_solution to tabu vector
+	Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size, clear_oldest_solution);//add random_solution to tabu vector
 	
 	for (int x = 0; x < number_of_iterations; x++)
 	{
@@ -370,14 +370,12 @@ void Tabu_Algorithm(int number_of_vertex, int number_of_edges, float& best_solut
 			{
 				current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
 				Save_solution_if_the_best(random_solution, current_solution_score, best_solution_score, best_selected_vertexes);
-				Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);
+				Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size, clear_oldest_solution);
 			}
 			random_solution.push_back(remembr_vertex);
 			
 		}
 		
-		
-
 		for (int y = 0; y < random_solution.size(); y++)
 		{
 			check_range = random_solution[y];
@@ -389,7 +387,7 @@ void Tabu_Algorithm(int number_of_vertex, int number_of_edges, float& best_solut
 				{
 					current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
 					Save_solution_if_the_best(random_solution, current_solution_score, best_solution_score, best_selected_vertexes);
-					Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);
+					Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size, clear_oldest_solution);
 				}
 
 				if (random_solution.size() > 1)//remove element
@@ -400,7 +398,7 @@ void Tabu_Algorithm(int number_of_vertex, int number_of_edges, float& best_solut
 					{
 						current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
 						Save_solution_if_the_best(random_solution, current_solution_score, best_solution_score, best_selected_vertexes);
-						Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);
+						Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size, clear_oldest_solution);
 					}
 					random_solution.push_back(remembr_vertex);
 				}
@@ -412,7 +410,7 @@ void Tabu_Algorithm(int number_of_vertex, int number_of_edges, float& best_solut
 					{
 						current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
 						Save_solution_if_the_best(random_solution, current_solution_score, best_solution_score, best_selected_vertexes);
-						Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);
+						Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size, clear_oldest_solution);
 					}
 					random_solution.pop_back();
 				}
@@ -428,7 +426,7 @@ void Tabu_Algorithm(int number_of_vertex, int number_of_edges, float& best_solut
 				{
 					current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
 					Save_solution_if_the_best(random_solution, current_solution_score, best_solution_score, best_selected_vertexes);
-					Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);
+					Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size, clear_oldest_solution);
 				}
 
 				if (random_solution.size() > 1)//remove element
@@ -439,7 +437,7 @@ void Tabu_Algorithm(int number_of_vertex, int number_of_edges, float& best_solut
 					{
 						current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
 						Save_solution_if_the_best(random_solution, current_solution_score, best_solution_score, best_selected_vertexes);
-						Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);
+						Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size, clear_oldest_solution);
 					}
 					random_solution.push_back(remembr_vertex);
 				}
@@ -451,7 +449,7 @@ void Tabu_Algorithm(int number_of_vertex, int number_of_edges, float& best_solut
 					{
 						current_solution_score = Rating_solution(random_solution, number_of_vertex, number_of_edges, vertex_to_edges_conections);
 						Save_solution_if_the_best(random_solution, current_solution_score, best_solution_score, best_selected_vertexes);
-						Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size);
+						Save_solution_in_tabu_vector(tabu_solutins, random_solution, number_of_tabu_solution, tabu_max_size, clear_oldest_solution);
 					}
 					random_solution.pop_back();
 				}
@@ -466,7 +464,7 @@ void Tabu_Algorithm(int number_of_vertex, int number_of_edges, float& best_solut
 		}
 	}
 }
-//Jak zrobiæ funkcje prawdopodobieñstwa
+
 void Simulated_annealing(int number_of_vertex, int number_of_edges, float& best_solution_score, vector<int>& best_selected_vertexes, vector<vector<int> >vertex_to_edges_conections, int number_of_iterations, int temperature)
 {
 	int minimum_temperature=0, check_range, vertex_to_change, vertex_new_value, puls_or_minus;
@@ -489,8 +487,7 @@ void Simulated_annealing(int number_of_vertex, int number_of_edges, float& best_
 
 	new_solution = main_solution;
 
-	for (int x = number_of_iterations; x > 0; x--)
-	{
+	
 		for (temperature; temperature > minimum_temperature; temperature--)
 		{
 			uniform_int_distribution<> nr_vertex(0, new_solution.size() - 1);
@@ -498,6 +495,9 @@ void Simulated_annealing(int number_of_vertex, int number_of_edges, float& best_
 			vertex_new_value = val_vertex(eng);
 			puls_or_minus = plus_minus(eng);
 
+			uniform_real_distribution<> random_u(1, 2);
+			uniform_real_distribution<> random_a(0, 1);
+			float a = random_a(eng);
 
 			if (puls_or_minus == 1)
 			{
@@ -538,21 +538,33 @@ void Simulated_annealing(int number_of_vertex, int number_of_edges, float& best_
 			{
 				main_solution = new_solution;
 				current_solution_score = score_of_new_solution;
+				for (int x = 1; x < temperature; x++)
+				{
+					a *= a;
+				}
+				temperature = a;
 			}
 			else {
 				if (score_of_new_solution < current_solution_score)
 				{
-					probability_of_change = -(probability_of_change - current_solution_score) / temperature;
-					//jakieœ random z uwzglendnieniem probability_of_change(im wiensze tym wienksza szansa) + temperature(im wyzsza tym wien)
-					if (probability_of_change > 1)
+					probability_of_change = exp(-(score_of_new_solution - current_solution_score) / temperature);
+
+					uniform_real_distribution<> random_u(1, 2);
+					float u = random_u(eng);
+					if (u < probability_of_change)
 					{
 						main_solution = new_solution;
 						current_solution_score = score_of_new_solution;
+						for (int x = 1; x < temperature; x++)
+						{
+							a *= a;
+						}
+						temperature = a;
 					}
 				}
 			}
 		}
-	}
+	
 
 }
 
@@ -677,7 +689,7 @@ void simple_graph_visualization_to_file(int number_of_vertex, int number_of_edge
 	output_data <<"-------------------------------------------------------------------------------------------"<<endl;
 	output_data.close();
 }
-//Oddaj
+
 void data_for_graphviz(int number_of_vertex, int number_of_edges, vector<vector<int>> vertex_to_vertexes_conections, vector<vector<int>> vertex_to_edges_conections, vector<int> best_selected_vertexes)
 {
 	bool slelected_vertex = false;
@@ -798,106 +810,308 @@ tuple<int, int> generate_graph(int& number_of_vertex, int& number_of_edges, int 
 	}
 	return { number_of_vertex, number_of_edges };
 }
-//Popraw(zrob nowy(dla poprawionych algorytmow czyli mez randoma) wykresy 1.czasy obliczeñ dla ró¿nych roziarów zadania 2.jakoœæ rozwi¹zania dla ró¿nych rozmiarów zadania UZYWAJ¥Æ!!--> œrednie czasy obliczeñ i œredni¹ z wartoœci funkcji celu dla ka¿dego przypadku testowego)
+
+void Make_median(vector<float>time_results, vector<float>score_results,float& time_median, float& score_median)
+{
+	for (int x = 0; x < time_results.size(); x++)
+	{
+		time_median += time_results[x];
+	}
+	time_median /= time_results.size();
+
+	for (int x = 0; x < score_results.size(); x++)
+	{
+		score_median += score_results[x];
+	}
+	score_median /= score_results.size();
+}
+//oddaj
 void Make_stat(int number_of_vertex, int number_of_edges, int  conection_start, int conection_end, vector<vector<int> > vertex_to_vertexes_conections, vector<vector<int> > vertex_to_edges_conections, vector<int> solution, vector<int> best_selected_vertexes, float best_solution_score,int number_of_iterations,int type_of_algorithm,int tabu_max_size)
 {
-	int nr_of_algorithm_iterations = 25;
-	fstream Climbing_Algorithm_stat, Tabu_Algorithm_stat, Brute_Force_stat, Data_for_gnuplot;
+	int nr_of_algorithm_iterations = 24, iterations_for_median=12, numer_of_edges_in_last_solution = 0;
+	float time, time_median, score_median,best_score_for_climbing=0, best_score_for_tabu=0, best_score_for_brute=0;
+	vector<float>time_results,score_results;
+	fstream Climbing_Algorithm_stat, Tabu_Algorithm_stat, Brute_Force_stat, Data_for_gnuplot, Best_solution_for_algorithm;
 	Climbing_Algorithm_stat.open("Climbing_Algorithm_stat.txt", ios::out | ios::trunc);
 	Tabu_Algorithm_stat.open("Tabu_Algorithm_stat.txt", ios::out | ios::trunc);
 	Brute_Force_stat.open("Brute_Force_stat.txt", ios::out | ios::trunc);
 	Data_for_gnuplot.open("Data.dat", ios::out | ios::trunc);
+	Data_for_gnuplot.open("Best_solution_for_algorithm.txt", ios::out | ios::trunc);
 	Climbing_Algorithm_stat.close();
 	Tabu_Algorithm_stat.close();
 	Brute_Force_stat.close();
 	Data_for_gnuplot.close();
+	Best_solution_for_algorithm.close();
+
+	clock_t start = clock();
 
 	type_of_algorithm = 1;
 	for (int x = 0; x < nr_of_algorithm_iterations; x++)
 	{
-		vertex_to_vertexes_conections.clear(), vertex_to_edges_conections.clear(), solution.clear(), best_selected_vertexes.clear();
+		time_results.clear(), score_results.clear();//vertex_to_vertexes_conections.clear(), vertex_to_edges_conections.clear(), solution.clear(), best_selected_vertexes.clear(),
+		time_median = 0, score_median = 0;
 		best_solution_score = 0;
 		number_of_vertex = x + 2;
 		number_of_iterations = x + 1;
 		tabu_max_size = x + 2;
 
-		generate_graph(number_of_vertex, number_of_edges, conection_start, conection_end, vertex_to_vertexes_conections, vertex_to_edges_conections);
-	
-		clock_t start = clock();
-		Climbing_Algorithm(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, vertex_to_edges_conections, number_of_iterations, type_of_algorithm);
+		for (int x=0;x<= numer_of_edges_in_last_solution;)
+		{
+			vertex_to_vertexes_conections.clear(), vertex_to_edges_conections.clear(), solution.clear(), best_selected_vertexes.clear(),
+			generate_graph(number_of_vertex, number_of_edges, conection_start, conection_end, vertex_to_vertexes_conections, vertex_to_edges_conections);
+			x = number_of_edges;
+		}
+		numer_of_edges_in_last_solution = number_of_edges;
+		for (int x = 0; x < iterations_for_median; x++)
+		{
+			best_solution_score = 0;
+			start = clock();
+			Climbing_Algorithm(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, vertex_to_edges_conections, number_of_iterations, type_of_algorithm);
+			time = clock() - start;
+			time_results.push_back(time);
+			score_results.push_back(best_solution_score);
+			if (best_score_for_climbing < best_solution_score)
+			{
+				best_score_for_climbing = best_solution_score;
+			}
+		}
+		Make_median(time_results, score_results, time_median, score_median);
+
 		Climbing_Algorithm_stat.open("Climbing_Algorithm_stat.txt", ios::out | ios::app);
 		Climbing_Algorithm_stat << "-------------------------------------------------------------------------------------------" << endl;
 		Climbing_Algorithm_stat << "Numer of vertex: " << number_of_vertex << endl;
-		Climbing_Algorithm_stat << "Time= " << clock() - start << endl;
-		Climbing_Algorithm_stat << "Score= " << best_solution_score << endl;
+		Climbing_Algorithm_stat << "Time_median= " << time_median << endl;
+		Climbing_Algorithm_stat << "Score_median= " << score_median << endl;
+		Climbing_Algorithm_stat << "number of edges in graph= " << number_of_edges << endl;
 		Climbing_Algorithm_stat << "-------------------------------------------------------------------------------------------" << endl;
 		Climbing_Algorithm_stat.close();
 
 		Data_for_gnuplot.open("Data.dat", ios::out | ios::app);
 		Data_for_gnuplot << number_of_vertex <<" ";
-		Data_for_gnuplot << clock() - start <<" ";
-		Data_for_gnuplot << best_solution_score <<" ";
+		Data_for_gnuplot << time_median <<" ";
+		Data_for_gnuplot << score_median <<" ";
 		Data_for_gnuplot.close();
 
-		solution.clear(), best_selected_vertexes.clear();
-		best_solution_score = 0;
+		solution.clear(), best_selected_vertexes.clear(), time_results.clear(), score_results.clear();
+		time_median=0, score_median=0;
 
-		start = clock();
-		Tabu_Algorithm(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, vertex_to_edges_conections, number_of_iterations, tabu_max_size);
+		for (int x = 0; x < iterations_for_median; x++)
+		{
+			best_solution_score = 0;
+			start = clock();
+			Tabu_Algorithm(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, vertex_to_edges_conections, number_of_iterations, tabu_max_size);
+			time = clock() - start;
+			time_results.push_back(time);
+			score_results.push_back(best_solution_score);
+			if (best_score_for_tabu < best_solution_score)
+			{
+				best_score_for_tabu = best_solution_score;
+			}
+		}
+		Make_median(time_results, score_results, time_median, score_median);
+
 		Tabu_Algorithm_stat.open("Tabu_Algorithm_stat.txt", ios::out | ios::app);
 		Tabu_Algorithm_stat << "-------------------------------------------------------------------------------------------" << endl;
 		Tabu_Algorithm_stat << "Numer of vertex: " << number_of_vertex << endl;
-		Tabu_Algorithm_stat << "Time= " << clock() - start << endl;
-		Tabu_Algorithm_stat << "Score= " << best_solution_score << endl;
+		Tabu_Algorithm_stat << "Time_median= " << time_median << endl;
+		Tabu_Algorithm_stat << "Score_median= " << score_median << endl;
+		Tabu_Algorithm_stat << "number of edges in graph= " << number_of_edges << endl;
 		Tabu_Algorithm_stat << "-------------------------------------------------------------------------------------------" << endl;
 		Tabu_Algorithm_stat.close();
 
 		Data_for_gnuplot.open("Data.dat", ios::out | ios::app);
-		Data_for_gnuplot << clock() - start << " ";
-		Data_for_gnuplot << best_solution_score << " ";
+		Data_for_gnuplot << time_median << " ";
+		Data_for_gnuplot << score_median << " ";
 		Data_for_gnuplot.close();
 
-		if (x < 10) 
+		if (x < 9) 
 		{
-			solution.clear(), best_selected_vertexes.clear();
-			best_solution_score = 0;
+			solution.clear(), best_selected_vertexes.clear(), time_results.clear(), score_results.clear();
+			time_median = 0, score_median = 0;
 
-			start = clock();
-			Brute_Force_1(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, vertex_to_edges_conections);
+			for (int x = 0; x < iterations_for_median; x++)
+			{
+				best_solution_score = 0;
+				start = clock();
+				Brute_Force_1(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, vertex_to_edges_conections);
+				time = clock() - start;
+				time_results.push_back(time);
+				score_results.push_back(best_solution_score);
+				if (best_score_for_brute < best_solution_score)
+				{
+					best_score_for_brute = best_solution_score;
+				}
+			}
+			Make_median(time_results, score_results, time_median, score_median);
+
 			Brute_Force_stat.open("Brute_Force_stat.txt", ios::out | ios::app);
 			Brute_Force_stat << "-------------------------------------------------------------------------------------------" << endl;
 			Brute_Force_stat << "Numer of vertex: " << number_of_vertex << endl;
-			Brute_Force_stat << "Time= " << clock() - start << endl;
-			Brute_Force_stat << "Score= " << best_solution_score << endl;
+			Brute_Force_stat << "Time_median= " << time_median << endl;
+			Brute_Force_stat << "Score_median= " << score_median << endl;
+			Brute_Force_stat << "number of edges in graph= " << number_of_edges << endl;
 			Brute_Force_stat << "-------------------------------------------------------------------------------------------" << endl;
 			Brute_Force_stat.close();
 
 			Data_for_gnuplot.open("Data.dat", ios::out | ios::app);
-			Data_for_gnuplot << clock() - start << " ";
-			Data_for_gnuplot << best_solution_score << " ";
+			Data_for_gnuplot << time_median << " ";
+			Data_for_gnuplot << score_median << " ";
 			Data_for_gnuplot.close();
 		}
 		Data_for_gnuplot.open("Data.dat", ios::out | ios::app);
 		Data_for_gnuplot <<endl;
 		Data_for_gnuplot.close();
 	}
+	/*Best_solution_for_algorithm.open("Best_solution_for_algorithm.txt", ios::out | ios::app);
+	Best_solution_for_algorithm << "-------------------------------------------------------------------------------------------" << endl;
+	Best_solution_for_algorithm << "Best scors: " << endl;
+	Best_solution_for_algorithm << "Climbing: " << best_score_for_climbing << endl;
+	Best_solution_for_algorithm << "Tabu= " << best_score_for_tabu << endl;
+	Best_solution_for_algorithm << "Brute= " << best_score_for_brute << endl;
+	Best_solution_for_algorithm << "-------------------------------------------------------------------------------------------" << endl;
+	Best_solution_for_algorithm.close();*/
+}
+//oddaj
+void Finding_best_solution_by_simulated_annealing(int number_of_vertex, int number_of_edges, float best_solution_score, vector<int> best_selected_vertexes, int  conection_start, int conection_end, vector<vector<int> > vertex_to_vertexes_conections, vector<vector<int> > vertex_to_edges_conections)
+{
+	
+	int number_of_iterations= number_of_vertex,temperature= number_of_vertex;
+	float best_score_for_brute = 0, best_score_for_annealing = 0, time_annealing,time_brute,annealing_time_table[10];// best_score_for_current_params, current_score_for_params, time, time_median, score_median, minimum_value;
+	//vector<float>time_results, score_results;
+	fstream  Time_to_find_best_solution_for_annealing; //Parameters_for_Simulated_Annealing
+	//Parameters_for_Simulated_Annealing.open("Parameters_for_Simulated_Annealing.txt", ios::out | ios::trunc);
+	//Parameters_for_Simulated_Annealing.close();
+
+	Time_to_find_best_solution_for_annealing.open("Time_to_find_best_solution_for_annealing.txt", ios::out | ios::trunc);
+	Time_to_find_best_solution_for_annealing.close();
+
+
+	clock_t start = clock();
+
+	vertex_to_vertexes_conections.clear(), vertex_to_edges_conections.clear(), best_selected_vertexes.clear();
+	generate_graph(number_of_vertex, number_of_edges, conection_start, conection_end, vertex_to_vertexes_conections, vertex_to_edges_conections);
+
+	
+	start = clock();
+	Brute_Force_1(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, vertex_to_edges_conections);
+	time_brute = clock() - start;
+	best_score_for_brute = best_solution_score;
+	/*temperature = number_of_vertex*2;
+	number_of_iterations = temperature;
+	vector<int>tamp_number;
+	vector<int>iterations_number;
+	vector<float>time_results_median;
+	vector<float>top_scors_for_different_params;
+	
+	vertex_to_vertexes_conections.clear(), vertex_to_edges_conections.clear(), best_selected_vertexes.clear();
+	generate_graph(number_of_vertex, number_of_edges, conection_start, conection_end, vertex_to_vertexes_conections, vertex_to_edges_conections);
+
+	for (int a = 0; a < temperature; temperature--)
+	{
+		number_of_iterations = temperature;
+		for (int b = 0; b < number_of_iterations; number_of_iterations--)
+		{
+			time_median = 0, score_median = 0;
+			best_selected_vertexes.clear(), time_results.clear(), score_results.clear();
+			for (int x = 0; x < iterations_for_median; x++)
+			{
+				best_solution_score = 0;
+				start = clock();
+				Simulated_annealing(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, vertex_to_edges_conections, number_of_iterations, temperature);
+				time = clock() - start;
+				time_results.push_back(time);
+				score_results.push_back(best_solution_score);
+			}
+			Make_median(time_results, score_results, time_median, score_median);
+			
+			if (top_scors_for_different_params.size() == size_of_top_scors)
+			{
+				/*for (const auto& i : top_scors_for_different_params)
+					cout << i << ' ' << endl;
+				cout << "------------------" << endl;*/
+	/*
+				minimum_value = top_scors_for_different_params[0];
+				for (int i = 0; i < size_of_top_scors; i++)//find smallest score
+				{
+					if (top_scors_for_different_params[i] < minimum_value)
+						minimum_value = top_scors_for_different_params[i];
+				}
+				if (minimum_value < score_median)//change smallest value to new score
+				{
+					for (int x = 0; x < top_scors_for_different_params.size(); x++)
+					{
+						if (top_scors_for_different_params[x] < minimum_value)
+						{
+							top_scors_for_different_params[x] = minimum_value;
+							tamp_number[x] = temperature;
+							iterations_number[x] = number_of_iterations;
+							time_results_median[x] = time_median;
+							x = top_scors_for_different_params.size();
+						}
+					}
+				}
+
+			}else{
+				top_scors_for_different_params.push_back(score_median);
+				tamp_number.push_back(temperature);
+				iterations_number.push_back(number_of_iterations);
+				time_results_median.push_back(time_median);
+			}
+		}
+	}
+	for (int x = 0; x < size_of_top_scors; x++)
+	{
+		Parameters_for_Simulated_Annealing.open("Parameters_for_Simulated_Annealing.txt", ios::out | ios::app);
+		Parameters_for_Simulated_Annealing << "-------------------------------------------------------------------------------------------" << endl;
+		Parameters_for_Simulated_Annealing << "Numer of vertex: " << number_of_vertex << endl;
+		Parameters_for_Simulated_Annealing << "Score_median= " << top_scors_for_different_params[x] << endl;
+		Parameters_for_Simulated_Annealing << "Time_median= " << time_results_median[x] << endl;
+		Parameters_for_Simulated_Annealing << "Temperature= " << tamp_number[x] << endl;
+		Parameters_for_Simulated_Annealing << "Number_of_iterations= " << iterations_number[x] << endl;
+		Parameters_for_Simulated_Annealing << "-------------------------------------------------------------------------------------------" << endl;
+		Parameters_for_Simulated_Annealing.close();
+	}*/
+
+	for (int x = 0; x<10; x++)
+	{
+		best_score_for_annealing = 0;
+		best_solution_score = 0;
+		start = clock();
+		for (int y = 0; best_score_for_annealing < best_score_for_brute;)
+		{
+			Simulated_annealing(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, vertex_to_edges_conections, number_of_iterations, temperature);
+			best_score_for_annealing = best_solution_score;
+
+		}
+		time_annealing = clock() - start;
+		annealing_time_table[x] = time_annealing;
+	}
+	
+	Time_to_find_best_solution_for_annealing.open("Time_to_find_best_solution_for_annealing.txt", ios::out | ios::app);
+	Time_to_find_best_solution_for_annealing << "-------------------------------------------------------------------------------------------" << endl;
+	Time_to_find_best_solution_for_annealing << "Numer of vertex: " << number_of_vertex << endl;
+	Time_to_find_best_solution_for_annealing << "Time to find best solution: " << number_of_vertex << endl;
+	for (int x = 0; x < 10; x++) 
+	{
+		Time_to_find_best_solution_for_annealing << "annealing= " << annealing_time_table[x] << "ms" << endl;
+	}
+	Time_to_find_best_solution_for_annealing << "brute= " << time_brute <<"ms"<< endl;
+	Time_to_find_best_solution_for_annealing << "-------------------------------------------------------------------------------------------" << endl;
+	Time_to_find_best_solution_for_annealing.close();
 }
 
-
 int main(){
-	int number_of_vertex = 0, number_of_edges = 0, conection_start = 0, conection_end = 0, minimum_vertex_number = 0, menu = 5, graph_select = 0, number_of_iterations=0, type_of_algorithm=0, tabu_max_size=0, temperature=0;
+	int number_of_vertex = 0, number_of_edges = 0, conection_start = 0, conection_end = 0, minimum_vertex_number = 0, menu = 5, graph_select = 0, number_of_iterations=0, type_of_algorithm=0, tabu_max_size=0, temperature=0, iterations_for_median, size_of_top_scors;
 	vector<vector<int> > vertex_to_vertexes_conections,vertex_to_edges_conections;// vertex_conections= x-vertex_1 y-vertex_2, vertex_to_edges_conections= x-vertex y-number of edge
 	vector<int >solution, best_selected_vertexes;
 	float best_solution_score = 0;
-	//dodaj liczbe wywo³añ a=funkcji celu
-	//POPRAW STATYSTYKI
 
 	for (menu; menu != 0; )
 	{
 		if (menu == 5)
 		{
 			vertex_to_vertexes_conections.clear(), vertex_to_edges_conections.clear(), solution.clear(), best_selected_vertexes.clear();
-			graph_select = 0, best_solution_score=0;
+			graph_select = 0, best_solution_score = 0;
 			cout << endl;
 			cout << "Select graph" << endl << "1 --- From file" << endl << "2 --- Generate" << endl;
 			for (graph_select; graph_select < 1 || graph_select > 2;)
@@ -915,24 +1129,26 @@ int main(){
 			}
 			if (graph_select == 2)
 			{
-				
-				for (number_of_vertex = 0;number_of_vertex < 2;)
+
+				for (number_of_vertex = 0; number_of_vertex < 2;)
 				{
 					cout << "enter number of vertex: ";
 					cin >> number_of_vertex;
 					if (number_of_vertex < 2)
-					{cout << "number of vertex > 2 !"<<endl;}
+					{
+						cout << "number of vertex > 2 !" << endl;
+					}
 				}
 				generate_graph(number_of_vertex, number_of_edges, conection_start, conection_end, vertex_to_vertexes_conections, vertex_to_edges_conections);
 			}
 
 			Show_conections(vertex_to_vertexes_conections, vertex_to_edges_conections);
 		}
-		cout<<"------------------------------------------" << endl;
-		cout << "Select algorithm:                        |" << endl << "1 --- Climbing                           |" << endl << "2 --- Tabu                               |" <<endl<< "3 --- Simulated annealing                |" << endl << "4 --- Brute Force                        |" << endl << "5 --- Select new graph                   |" << endl << "6 --- Save simple graph visualization    |" << endl << "7 --- Save graph for graphviz            |" <<endl<<"8 --- Create algorithms statistics       |"<< endl << "0 --- exit                               |" << endl; ;
+		cout << "------------------------------------------" << endl;
+		cout << "Select algorithm:                        |" << endl << "1 --- Climbing                           |" << endl << "2 --- Tabu                               |" << endl << "3 --- Simulated annealing                |" << endl << "4 --- Brute Force                        |" << endl << "5 --- Select new graph                   |" << endl << "6 --- Save simple graph visualization    |" << endl << "7 --- Save graph for graphviz            |" << endl << "8 --- Create algorithms statistics       |" <<endl<<"9 --- Find best solution, sim. annealing |"<< endl << "0 --- exit                               |" << endl; ;
 		cout << "------------------------------------------" << endl;
 		cin >> menu;
-		cout<< endl;
+		cout << endl;
 
 		if (menu == 1)
 		{
@@ -982,7 +1198,7 @@ int main(){
 			Brute_Force_1(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, vertex_to_edges_conections);
 			printf("Czas wykonywania: %lu ms\n", clock() - start);
 		}
-		if (menu == 1 || menu == 2 || menu == 3 || menu==4)
+		if (menu == 1 || menu == 2 || menu == 3 || menu == 4)
 		{
 			Show_best_solution(best_selected_vertexes, best_solution_score);
 			best_solution_score = 0;
@@ -999,7 +1215,13 @@ int main(){
 		{
 			Make_stat(number_of_vertex, number_of_edges, conection_start, conection_end, vertex_to_vertexes_conections, vertex_to_edges_conections, solution, best_selected_vertexes, best_solution_score, number_of_iterations, type_of_algorithm, tabu_max_size);
 		}
-	
+		if (menu == 9)
+		{
+			cout << "Select size of solution: ";
+			cin >> number_of_vertex;
+			
+			Finding_best_solution_by_simulated_annealing(number_of_vertex, number_of_edges, best_solution_score, best_selected_vertexes, conection_start, conection_end, vertex_to_vertexes_conections, vertex_to_edges_conections);
+		}
 	}
 	return 0;
 }
